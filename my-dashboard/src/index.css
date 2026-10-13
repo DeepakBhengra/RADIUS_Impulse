@@ -1,0 +1,64 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import "tailwindcss";
+
+@theme {
+	--font-sans: "Inter", sans-serif;
+}
+
+:root {
+	--bg-app: #f8fafc;
+	--bg-card: #ffffff;
+	--accent-primary: #0f6cbd;
+	--accent-hover: #0a5ca6;
+	--section-header: #0f6cbd;
+	--border-soft: #d6e4f7;
+	--text-primary: #767676;
+	--text-secondary: #575758;
+	--shadow-soft: 0 8px 24px rgba(15, 108, 189, 0.08);
+}
+
+html,
+body,
+#root {
+	min-height: 100%;
+}
+
+body {
+	font-family: "Inter", sans-serif;
+	background: var(--bg-app);
+	color: var(--text-primary);
+}
+
+.enterprise-card {
+	background: var(--bg-card);
+	border: 1px solid var(--border-soft);
+	border-radius: 16px;
+	box-shadow: var(--shadow-soft);
+	padding: 16px;
+	transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.enterprise-card:hover {
+	border-color: #bfd4f3;
+	box-shadow: 0 12px 30px rgba(15, 108, 189, 0.1);
+}
+
+.enterprise-card-header {
+	color: var(--section-header);
+}
+
+.field-label {
+	color: var(--text-secondary);
+	font-weight: 700;
+}
+
+.field-value {
+	color: #000000;
+	font-weight: 700;
+}
+
+button,
+a {
+	transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease,
+		box-shadow 180ms ease;
+}

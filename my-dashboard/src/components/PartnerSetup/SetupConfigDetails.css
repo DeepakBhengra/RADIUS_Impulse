@@ -1,0 +1,646 @@
+/* =========================================================
+   PARTNER SETUP TABLE
+   ========================================================= */
+
+.partner-setup-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+
+  background: #ffffff;
+
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
+
+.partner-setup-table-wrapper::-webkit-scrollbar {
+  height: 6px;
+}
+
+.partner-setup-table-wrapper::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+
+.partner-setup-table-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.partner-setup-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+
+/* =========================================================
+   TABLE
+   ========================================================= */
+
+.partner-table {
+  width: max-content;
+  min-width: 100%;
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.partner-table-header {
+  min-width: 1260px;
+
+  display: flex;
+  align-items: center;
+
+  height: 42px;
+
+  background:
+    linear-gradient(
+      180deg,
+      #f8fbff 0%,
+      #f5f9fe 100%
+    );
+
+  border-bottom: 1px solid #e2e8f0;
+}
+
+
+/* =========================================================
+   HEADER CELL
+   ========================================================= */
+
+.partner-table-header-cell {
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+
+  flex-shrink: 0;
+
+  padding: 0 12px;
+
+  color: #64748b;
+
+  font-size: 9px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+  letter-spacing: 0.045em;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
+   HEADER CONTENT
+   ========================================================= */
+
+.partner-table-header-content {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  min-width: 0;
+}
+
+.partner-table-header-icon {
+  flex-shrink: 0;
+  color: #94a3b8;
+}
+
+
+/* =========================================================
+   COLUMN WIDTHS
+   ========================================================= */
+
+.partner-col-key {
+  width: 245px;
+  min-width: 245px;
+}
+
+.partner-col-source {
+  width: 135px;
+  min-width: 135px;
+}
+
+.partner-col-format {
+  width: 105px;
+  min-width: 105px;
+}
+
+.partner-col-doc {
+  width: 105px;
+  min-width: 105px;
+}
+
+.partner-col-communication {
+  width: 175px;
+  min-width: 175px;
+}
+
+.partner-col-direction {
+  width: 100px;
+  min-width: 100px;
+}
+
+.partner-col-address {
+  width: 180px;
+  min-width: 180px;
+}
+
+.partner-col-send {
+  width: 110px;
+  min-width: 110px;
+}
+
+.partner-col-status {
+  width: 105px;
+  min-width: 105px;
+}
+
+
+/* =========================================================
+   ACTION HEADER
+   ========================================================= */
+
+.partner-table-action-header {
+  width: 64px;
+  min-width: 64px;
+
+  justify-content: center;
+
+  border-left: 1px solid #edf2f7;
+}
+
+
+/* =========================================================
+   TABLE BODY
+   ========================================================= */
+
+.partner-table-body {
+  min-width: 1260px;
+}
+
+
+/* =========================================================
+   ROW
+   ========================================================= */
+
+.partner-table-row {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  min-height: 62px;
+
+  background: #ffffff;
+
+  border-bottom: 1px solid #eef2f7;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.partner-table-row:last-child {
+  border-bottom: none;
+}
+
+
+/* =========================================================
+   ROW HOVER
+   ========================================================= */
+
+.partner-table-row:hover {
+  background: #f8fbff;
+}
+
+
+/* =========================================================
+   ROW FOCUS
+   ========================================================= */
+
+.partner-table-row:focus {
+  outline: none;
+
+  background: #f8fbff;
+
+  box-shadow:
+    inset 0 0 0 2px
+    rgba(37, 99, 235, 0.16);
+}
+
+
+/* =========================================================
+   CELL
+   ========================================================= */
+
+.partner-table-cell {
+  height: 62px;
+
+  display: flex;
+  align-items: center;
+
+  flex-shrink: 0;
+
+  padding: 0 12px;
+
+  overflow: hidden;
+
+  border-right: 1px solid #f1f5f9;
+
+  box-sizing: border-box;
+}
+
+.partner-table-cell:last-of-type {
+  border-right: none;
+}
+
+
+/* =========================================================
+   SOURCE SYSTEM KEY
+   ========================================================= */
+
+.partner-source-key {
+  display: flex;
+  align-items: center;
+
+  min-width: 0;
+
+  gap: 8px;
+}
+
+
+/* =========================================================
+   SOURCE KEY ICON
+   ========================================================= */
+
+/* .partner-source-key-icon {
+  width: 28px;
+  height: 28px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 7px;
+
+  background: #eff6ff;
+  color: #2563eb;
+} */
+
+
+/* =========================================================
+   SOURCE KEY VALUE
+   ========================================================= */
+
+.partner-source-key-value {
+  min-width: 0;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  color: #1143b8;
+  text-decoration: underline;
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   NORMAL VALUE
+   ========================================================= */
+
+.partner-table-value {
+  display: block;
+
+  width: 100%;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  color: #334155;
+
+  font-size: 11px;
+  font-weight: 500;
+}
+
+
+/* =========================================================
+   EMPTY VALUE
+   ========================================================= */
+
+.partner-table-empty {
+  color: #cbd5e1;
+
+  font-size: 11px;
+}
+
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+
+.partner-col-status {
+  justify-content: flex-start;
+}
+
+
+/* =========================================================
+   ACTION CELL
+   ========================================================= */
+
+.partner-table-action-cell {
+  width: 64px;
+  min-width: 64px;
+
+  justify-content: center;
+
+  border-left: 1px solid #edf2f7;
+  border-right: none;
+}
+
+
+/* =========================================================
+   VIEW BUTTON
+   ========================================================= */
+
+.partner-view-button {
+  width: 28px;
+  height: 28px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid #e2e8f0;
+
+  border-radius: 50%;
+
+  background: #ffffff;
+
+  color: #64748b;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+
+/* =========================================================
+   BUTTON HOVER
+   ========================================================= */
+
+.partner-table-row:hover
+.partner-view-button {
+  border-color: #bfdbfe;
+
+  background: #eff6ff;
+
+  color: #2563eb;
+}
+
+.partner-view-button:hover {
+  border-color: #93c5fd !important;
+
+  background: #dbeafe !important;
+
+  color: #1d4ed8 !important;
+
+  transform: translateX(2px);
+}
+
+
+/* =========================================================
+   TABLE FOOTER
+   ========================================================= */
+
+.partner-table-footer {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  margin-top: 10px;
+
+  padding: 0 2px;
+}
+
+
+/* =========================================================
+   RECORD COUNT
+   ========================================================= */
+
+.partner-table-record-count {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  color: #475569;
+
+  font-size: 10px;
+  font-weight: 600;
+}
+
+
+/* =========================================================
+   RECORD COUNT DOT
+   ========================================================= */
+
+.partner-record-count-dot {
+  width: 6px;
+  height: 6px;
+
+  border-radius: 50%;
+
+  background: #2563eb;
+
+  box-shadow:
+    0 0 0 3px #eff6ff;
+}
+
+
+/* =========================================================
+   FOOTER HINT
+   ========================================================= */
+
+.partner-table-footer-hint {
+  color: #94a3b8;
+
+  font-size: 9px;
+}
+
+
+/* =========================================================
+   RESPONSIVE - TABLET
+   ========================================================= */
+
+@media (max-width: 1100px) {
+  .partner-table-header,
+  .partner-table-body {
+    min-width: 1260px;
+  }
+}
+
+
+/* =========================================================
+   RESPONSIVE - 900px
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+  .partner-setup-table-wrapper {
+    border-radius: 10px;
+  }
+
+  .partner-table-header {
+    height: 40px;
+  }
+
+  .partner-table-row {
+    min-height: 58px;
+  }
+
+  .partner-table-cell {
+    height: 58px;
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+  .partner-table-footer {
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 6px;
+  }
+
+  .partner-table-footer-hint {
+    padding-left: 2px;
+  }
+
+}
+.partner-hover-anchor {
+  position: relative;
+  width: 100%;
+}
+
+.partner-hover-card {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 9999;
+  width: 320px;
+  max-height: 360px;
+  overflow-y: auto;
+
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14);
+
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.partner-hover-card::-webkit-scrollbar {
+  width: 6px;
+}
+.partner-hover-card::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.partner-hover-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #edf2f7;
+  background: #f8fbff;
+  border-radius: 12px 12px 0 0;
+  position: sticky;
+  top: 0;
+}
+
+.partner-hover-card-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.partner-hover-card-body {
+  padding: 6px 14px 10px;
+}
+
+.partner-hover-group {
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+.partner-hover-group:last-child {
+  border-bottom: none;
+}
+
+.partner-hover-group-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+  margin-bottom: 6px;
+}
+
+.partner-hover-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 3px 0;
+}
+
+.partner-hover-field-label {
+  font-size: 10px;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.partner-hover-field-value {
+  font-size: 11px;
+  font-weight: 600;
+  color: #0f172a;
+  text-align: right;
+  word-break: break-word;
+}

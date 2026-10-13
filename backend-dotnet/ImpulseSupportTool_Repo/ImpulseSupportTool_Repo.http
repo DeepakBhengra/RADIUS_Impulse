@@ -1,0 +1,6 @@
+@ImpulseSupportTool_Repo_HostAddress = http://localhost:5298
+
+GET {{ImpulseSupportTool_Repo_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

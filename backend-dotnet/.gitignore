@@ -1,0 +1,27 @@
+# Build results
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Rider
+.idea/
+
+# NuGet
+packages/
+
+# Logs
+*.log
+
+# Publish output
+publish/
+
+# ASP.NET Core
+appsettings.Development.json
+
+# Windows
+Thumbs.db
+Desktop.ini
