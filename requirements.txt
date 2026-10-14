@@ -1,0 +1,123 @@
+Impulse Tool — Requirements
+================================
+
+1. Purpose
+-----------
+Provide a web tool that traces one order across Impulse order-entry flows.
+A support user searches by customer PO number and country, then reviews the
+order header, line items, processing flow, partner setup, and PO switch data
+in one screen.
+
+2. Users
+--------
+- Support and operations staff diagnosing an order that is stuck, missing, or
+  split across systems.
+- Engineers running the UI locally with mock data when the corporate network
+  or databases are unavailable.
+
+3. Functional requirements
+--------------------------
+FR-1  Search by customer PO number and country code.
+FR-2  Select the target environment: Prod, Qa, or Dev.
+FR-3  Show a loading state while the lookup runs, an empty state when no
+      order matches, and an error state when the service cannot be reached.
+FR-4  Show an order summary: order number, customer PO, status, dates,
+      country, source, branch, and bill-to customer.
+FR-5  Show order header fields from ODS.ODS_ORDER.
+FR-6  Show line items from ODS.ODS_ORDER_LINE.
+FR-7  Show processing-flow progress from the order EO state code.
+FR-8  Show flow-trace status for the EDI, XEDI+MQ, and X4C paths.
+FR-9  Show inbound PO switch rows from ODS.DB2_IE_IN_PO_SW.
+FR-10 Show partner setup from ODS.DB2_IE_PARTNER_SETUP.
+FR-11 Show order status changes and EO header info from the ODS copies of
+      the DB2 tables.
+FR-12 Export the active result tab as JSON or CSV.
+FR-13 Keep recent searches in the browser for the current session.
+FR-14 Open detail pages for order header, line items, partner setup, and
+      PO switch without losing the search context.
+FR-15 Record a client-side audit event for each search.
+
+4. UI requirements
+------------------
+UI-1  React 19 single-page app built with Vite.
+UI-2  Hash routes:
+      #/                        main search dashboard
+      #/order-header-details    order header detail page
+      #/line-item-details       line item detail page
+      #/partner-setup-details   partner setup detail page
+      #/po-switch-details       PO switch detail page
+UI-3  Result tabs: Order Details, Line Items, Processing Flow,
+      Flow Trace Status, PO Switch, Setup & Configuration, Logs & Monitoring.
+UI-4  Search fields that the live API does not fully support stay visible
+      and disabled. Supported fields today are customer PO number and
+      country code. Environment is sent with every search.
+UI-5  Desktop and narrow layouts. The search card remains usable at 390px.
+UI-6  Mock mode returns one sample order for any search value. A value that
+      contains NOTFOUND returns the empty state.
+
+5. Backend requirements
+-----------------------
+BE-1  ASP.NET Core 8 Web API project ImpulseSupportTool_Repo.
+BE-2  POST /api/order/GetOrder
+      Body: poNumber, countryCode, environment, and optional orderNumber,
+      partnerId, customerNumber, sku, transactionId.
+BE-3  countryCode is matched to ODS COMPANY_CD. environment selects the
+      Oracle connection: Prod, Qa, or Dev.
+BE-4  Return 200 with OrderResponse, or 404 when the header query has no row.
+BE-5  Swagger UI at /swagger.
+BE-6  CORS allows the dashboard origin.
+BE-7  Oracle passwords are not stored in the repository. They are read from
+      .NET user secrets:
+      ODSConnectionQa:Password
+      ODSConnectionDev:Password
+      ODSConnectionProd:Password
+BE-8  Non-secret connection details live in appsettings.json under
+      ConnectionStrings: ODSConnectionProd, ODSConnectionQa, ODSConnectionDev.
+
+6. Data requirements
+--------------------
+The API reads these Oracle ODS objects:
+- ODS.ODS_ORDER
+- ODS.ODS_ORDER_LINE
+- ODS.DB2_OR_ORDER_STUS_CHGS
+- ODS.DB2_EO_ORDR_HDR_INFO
+- ODS.DB2_IE_PARTNER_SETUP
+- ODS.DB2_IE_IN_PO_SW
+
+appsettings.json also defines a DB2 ODBC connection string. The current
+repository does not open that ODBC connection. DB2 data is read through the
+ODS.DB2_* tables above.
+
+7. Runtime requirements
+-----------------------
+Dashboard
+- Node.js 22
+- npm 10
+- Packages in my-dashboard/package.json, installed with npm ci
+
+API
+- .NET SDK 8.0
+- Oracle.ManagedDataAccess.Core 23.26.300
+- Swashbuckle.AspNetCore 6.6.2
+- System.Data.Odbc 10.0.8
+- Network access to the ODS host for the selected environment
+- User secrets initialized for project id
+  b7da84d9-96e6-47f8-823c-0dad566774cb
+
+8. Configuration
+----------------
+my-dashboard/.env.local
+- VITE_ORDER_API_BASE_URL   default http://localhost:5298/api/order
+- VITE_USE_MOCK_API         true uses local mock data; false calls the API
+
+API launch profile "http"
+- http://localhost:5298
+- ASPNETCORE_ENVIRONMENT=Development
+
+9. Not in this release
+----------------------
+- Live lookup by SKU, account, partner id, or transaction id.
+- Direct DB2 ODBC queries.
+- Datadog, MQ, and TBX calls from the API. Those panels render from the
+  consolidated response and from mock data when the API does not supply them.
+- Authentication on the API.
