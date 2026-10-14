@@ -129,17 +129,20 @@ Content-Type: application/json
 
 `countryCode` is the company code in `ODS.ODS_ORDER`. `environment` selects `ODSConnectionProd`, `ODSConnectionQa`, or `ODSConnectionDev` from `appsettings.json`, then appends the matching user-secret password.
 
-NuGet packages:
+Package versions are listed under [Dependencies and run commands](#dependencies-and-run-commands).
 
-- `Oracle.ManagedDataAccess.Core` 23.26.300
-- `Swashbuckle.AspNetCore` 6.6.2
-- `System.Data.Odbc` 10.0.8
+## Dependencies and run commands
 
-## How to run
+Run the commands from the repository root. The dashboard can run on mock data with no API. The API is a separate process.
 
-### Dashboard with mock data
+### Frontend (`my-dashboard`)
 
-No database and no API are required.
+Runtime:
+
+- Node.js 22
+- npm 10
+
+Install and start:
 
 ```bash
 cd my-dashboard
@@ -147,16 +150,16 @@ npm ci
 npm run dev
 ```
 
-`my-dashboard/.env.local`:
+`npm run dev` starts Vite. Open the local URL it prints. Default mock settings in `my-dashboard/.env.local`:
 
 ```text
 VITE_ORDER_API_BASE_URL=http://localhost:5298/api/order
 VITE_USE_MOCK_API=true
 ```
 
-Any PO returns the sample order. A PO that contains `NOTFOUND` shows the empty state.
+With `VITE_USE_MOCK_API=true`, any PO returns the sample order. A PO that contains `NOTFOUND` shows the empty state.
 
-Other scripts:
+Other frontend commands, still from `my-dashboard`:
 
 ```bash
 npm run build
@@ -164,23 +167,105 @@ npm run lint
 npm run preview
 ```
 
-### API
+| Command | What it does |
+| --- | --- |
+| `npm ci` | Installs the lockfile in `my-dashboard/package-lock.json` |
+| `npm run dev` | Dev server with hot reload (`vite`) |
+| `npm run build` | Production build into `my-dashboard/dist` |
+| `npm run preview` | Serves the production build |
+| `npm run lint` | ESLint |
 
-Requires the .NET 8 SDK, network access to the ODS host for the environment you select, and the three user-secret passwords.
+Dependencies from `my-dashboard/package.json`:
+
+| Package | Version | Used for |
+| --- | --- | --- |
+| `react` | ^19.2.6 | UI |
+| `react-dom` | ^19.2.6 | Browser rendering |
+| `axios` | ^1.18.1 | `POST /api/order/GetOrder` |
+| `lucide-react` | ^1.17.0 | Icons |
+| `react-circle-flags` | ^0.0.30 | Country flags in the search card |
+| `@tailwindcss/vite` | ^4.3.0 | Tailwind Vite plugin |
+| `tailwindcss` | ^4.3.0 | Styles |
+| `vite` | ^8.0.12 | Dev server and production build |
+| `@vitejs/plugin-react` | ^6.0.1 | React transform in Vite |
+| `eslint` | ^10.3.0 | Lint |
+| `@eslint/js` | ^10.0.1 | ESLint base config |
+| `eslint-plugin-react-hooks` | ^7.1.1 | Hooks lint rules |
+| `eslint-plugin-react-refresh` | ^0.5.2 | React refresh lint rules |
+| `globals` | ^17.6.0 | ESLint browser globals |
+| `autoprefixer` | ^10.5.0 | CSS prefixes |
+| `postcss` | ^8.5.15 | CSS processing |
+| `@types/react` | ^19.2.14 | React type hints |
+| `@types/react-dom` | ^19.2.3 | React DOM type hints |
+
+### Backend (`backend-dotnet/ImpulseSupportTool_Repo`)
+
+Runtime:
+
+- .NET SDK 8.0
+- Network path to the ODS host for Prod, Qa, or Dev
+- User-secret passwords for the three ODS connections
+
+Restore, set passwords, and start:
 
 ```bash
 cd backend-dotnet/ImpulseSupportTool_Repo
+dotnet restore
 dotnet user-secrets set "ODSConnectionQa:Password" "<qa-password>"
 dotnet user-secrets set "ODSConnectionDev:Password" "<dev-password>"
 dotnet user-secrets set "ODSConnectionProd:Password" "<prod-password>"
 dotnet run --launch-profile http
 ```
 
-Swagger: `http://localhost:5298/swagger`.
+The `http` profile listens on `http://localhost:5298`. Swagger is `http://localhost:5298/swagger`.
+
+Other backend commands, from `backend-dotnet/ImpulseSupportTool_Repo`:
+
+```bash
+dotnet build
+dotnet run --launch-profile https
+```
+
+| Command | What it does |
+| --- | --- |
+| `dotnet restore` | Restores NuGet packages for `ImpulseSupportTool_Repo.csproj` |
+| `dotnet build` | Compiles the API |
+| `dotnet run --launch-profile http` | Runs the API at `http://localhost:5298` |
+| `dotnet run --launch-profile https` | Same port, Development environment, HTTPS profile in `launchSettings.json` |
+| `dotnet user-secrets set` | Stores an ODS password outside the repo |
+
+NuGet packages from `ImpulseSupportTool_Repo.csproj`:
+
+| Package | Version | Used for |
+| --- | --- | --- |
+| `Oracle.ManagedDataAccess.Core` | 23.26.300 | ODS Oracle connections and queries |
+| `Swashbuckle.AspNetCore` | 6.6.2 | Swagger UI at `/swagger` |
+| `System.Data.Odbc` | 10.0.8 | ODBC reference. The repository does not open this connection today |
+
+The ASP.NET Core shared framework comes from the .NET 8 SDK (`Microsoft.NET.Sdk.Web`, `net8.0`). It is not a separate `PackageReference`.
 
 ### Dashboard against the API
 
-In `my-dashboard/.env.local` set `VITE_USE_MOCK_API=false`, restart Vite, and search with a PO, country code, and environment. The browser calls `http://localhost:5298/api/order/GetOrder`.
+Start the API first. Then point the UI at it:
+
+```bash
+cd my-dashboard
+```
+
+Set `my-dashboard/.env.local`:
+
+```text
+VITE_ORDER_API_BASE_URL=http://localhost:5298/api/order
+VITE_USE_MOCK_API=false
+```
+
+Restart the dev server:
+
+```bash
+npm run dev
+```
+
+Search with a customer PO, a country code, and Prod, Qa, or Dev. The browser calls `http://localhost:5298/api/order/GetOrder`.
 
 ## Repository layout
 
