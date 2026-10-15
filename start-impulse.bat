@@ -48,7 +48,13 @@ if errorlevel 1 (
 )
 
 echo Starting the API at http://localhost:5298/
-start "Impulse API" /D "%~dp0backend-dotnet\ImpulseSupportTool_Repo" cmd /k dotnet run --launch-profile http
+if exist "%~dp0backend-dotnet\set-ods-secrets.bat" (
+  echo Loading ODS passwords from backend-dotnet\set-ods-secrets.bat
+  start "Impulse API" /D "%~dp0backend-dotnet\ImpulseSupportTool_Repo" cmd /k "call ..\set-ods-secrets.bat && dotnet run --launch-profile http"
+) else (
+  echo backend-dotnet\set-ods-secrets.bat was not found. The API will start without setting passwords.
+  start "Impulse API" /D "%~dp0backend-dotnet\ImpulseSupportTool_Repo" cmd /k dotnet run --launch-profile http
+)
 
 :open
 timeout /t 3 /nobreak >nul

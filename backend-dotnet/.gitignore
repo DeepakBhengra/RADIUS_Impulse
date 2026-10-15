@@ -58,6 +58,7 @@ coverage*
 appsettings.Development.json
 appsettings.*.local.json
 secrets.json
+set-ods-secrets.bat
 *.pfx
 
 # OS
