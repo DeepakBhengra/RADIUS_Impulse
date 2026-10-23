@@ -4,6 +4,7 @@ import LineItemDetailsPage from "./pages/LineItemDetailsPage";
 import PartnerSetupDetailsPage from "./pages/PartnerSetupDetailsPage";
 import PoSwitchDetailsPage from "./pages/PoSwitchDetailsPage";
 import OrderHeaderDetailsPage from "./pages/OrderHeaderDetailsPage";
+import LoginPage from "./pages/LoginPage";
 
 function parseHashLocation() {
   const rawHash = window.location.hash || "#/";
@@ -41,6 +42,10 @@ export default function RootRouter() {
 
   if (location.path === "/order-header-details") {
     return <OrderHeaderDetailsPage searchParams={location.searchParams} />;
+  }
+
+  if (location.path === "/" || location.path === "/login") {
+    return <LoginPage />;
   }
 
   return <Dashboard />;

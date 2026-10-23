@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { environmentChoices, readSession } from "../../auth/accessSession";
 
 import {
   Search,
@@ -14,7 +15,6 @@ import {
 
 const RECENT_SEARCH_KEY = "impulse_recent_searches";
 
-const ENVIRONMENTS = ["Prod", "Qa", "Dev"];
 const DEFAULT_ENVIRONMENT = " ";
 
 const COUNTRY_CODES = [
@@ -559,11 +559,12 @@ function EnvironmentDropdown({
   }, []);
 
   const selectedEnvironment = options.find(
-    (environment) => environment === value
+    (environment) => environment.id === value
   );
 
   const handleSelect = (environment) => {
-    onChange(environment);
+    if (environment.disabled) return;
+    onChange(environment.id);
 
     setOpen(false);
   };
@@ -602,7 +603,7 @@ function EnvironmentDropdown({
 
         {selectedEnvironment ? (
           <span className="dashboard-country-name">
-            {selectedEnvironment}
+            {selectedEnvironment.label}
           </span>
         ) : (
           <span className="dashboard-country-placeholder">
@@ -626,19 +627,21 @@ function EnvironmentDropdown({
           >
             {options.map((environment) => {
               const isSelected =
-                environment === value;
+                environment.id === value;
 
               return (
                 <button
-                  key={environment}
+                  key={environment.id}
                   type="button"
                   role="option"
                   aria-selected={isSelected}
+                  aria-disabled={environment.disabled}
+                  disabled={environment.disabled}
                   className={`dashboard-country-option ${
                     isSelected
                       ? "is-selected"
                       : ""
-                  }`}
+                  } ${environment.disabled ? "is-disabled" : ""}`}
                   onClick={() =>
                     handleSelect(environment)
                   }
@@ -648,7 +651,8 @@ function EnvironmentDropdown({
                   </span>
 
                   <span className="dashboard-country-option-name">
-                    {environment}
+                    {environment.label}
+                    {environment.disabled ? " (locked)" : ""}
                   </span>
 
                   {isSelected && (
@@ -682,7 +686,12 @@ export default function DashboardSearch({
     useState("");
 
   const [environment, setEnvironment] =
-    useState(DEFAULT_ENVIRONMENT);
+    useState(() => {
+      const session = readSession();
+      if (session?.mode === "guest") return "Dev";
+      if (session?.mode === "production" || session?.mode === "admin") return "Prod";
+      return DEFAULT_ENVIRONMENT;
+    });
 
   const [recentSearches, setRecentSearches] =
     useState(() => getRecentSearches());
@@ -910,7 +919,7 @@ export default function DashboardSearch({
             <EnvironmentDropdown
               value={environment}
               onChange={setEnvironment}
-              options={ENVIRONMENTS}
+              options={environmentChoices(readSession())}
             />
 
           </div>

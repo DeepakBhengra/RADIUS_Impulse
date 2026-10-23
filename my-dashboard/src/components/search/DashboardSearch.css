@@ -885,6 +885,17 @@
   background: #eff6ff;
 }
 
+.dashboard-country-option.is-disabled,
+.dashboard-country-option:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.dashboard-country-option.is-disabled:hover,
+.dashboard-country-option:disabled:hover {
+  background: transparent;
+}
+
 
 /* =========================================================
    OPTION CODE
