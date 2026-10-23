@@ -1,15 +1,16 @@
 import { useMemo, useState } from "react";
 import {
-  Cloud,
-  Database,
-  GitBranch,
+  ChevronDown,
+  Globe,
   Lock,
   Mail,
-  Server,
   Shield,
+  Sparkles,
   UserRound,
-  Workflow,
+  Users,
 } from "lucide-react";
+import Header from "../components/layout/Header";
+import radiusWatermark from "../assets/RADIUS_Watermark.png";
 import {
   COUNTRIES,
   DEMO_ACCOUNTS,
@@ -22,6 +23,7 @@ import {
   registerProductionUser,
   saveSession,
 } from "../auth/accessSession";
+import "../components/search/DashboardSearch.css";
 import "./LoginPage.css";
 
 const EMPTY_REGISTER = {
@@ -31,6 +33,12 @@ const EMPTY_REGISTER = {
   password: "",
   confirm: "",
 };
+
+const PAGE_BACKGROUND = `
+  radial-gradient(circle at 5% 20%, rgba(59, 130, 246, 0.07), transparent 25%),
+  radial-gradient(circle at 95% 20%, rgba(96, 165, 250, 0.06), transparent 25%),
+  linear-gradient(135deg, #f7fbff 0%, #ffffff 50%, #f5f9ff 100%)
+`;
 
 function goToDashboard() {
   window.location.hash = "#/app";
@@ -49,138 +57,144 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="radius-login">
-      <section className="radius-hero">
-        <div className="radius-brand">
-          <div className="radius-mark" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-            <span />
-            <Shield size={22} />
+    <div className="radius-access min-h-screen font-sans" style={{ background: PAGE_BACKGROUND }}>
+      <Header toggleSidebar={() => {}} />
+      <main className="pt-14">
+        <div className="mx-auto max-w-[1400px] p-4 md:p-5">
+          <div className="mx-auto w-full max-w-[480px]">
+            {view === "choose" && <AccessChoices onSelect={setView} />}
+            {view === "admin" && (
+              <AdminSignIn
+                onBack={() => setView("choose")}
+                onSignedIn={(email) =>
+                  enter(
+                    { mode: "admin", email, country: "", role: "Administrator" },
+                    "Prod",
+                  )
+                }
+              />
+            )}
+            {(view === "prod-register" || view === "admin-signup") && (
+              <ProductionRegister
+                adminMode={view === "admin-signup"}
+                onBack={() => setView(view === "admin-signup" ? "ready" : "choose")}
+                onSignIn={() => setView("prod-signin")}
+                onGuest={() => setView("guest")}
+                onCreated={(user) =>
+                  enter(
+                    {
+                      mode: "production",
+                      email: user.email,
+                      country: user.country,
+                      role: user.role,
+                    },
+                    "Prod",
+                  )
+                }
+              />
+            )}
+            {view === "prod-signin" && (
+              <ProductionSignIn
+                onBack={() => setView("choose")}
+                onRegister={() => setView("prod-register")}
+                onGuest={() => setView("guest")}
+                onSignedIn={(user) =>
+                  enter(
+                    {
+                      mode: "production",
+                      email: user.email,
+                      country: user.country,
+                      role: user.role,
+                    },
+                    "Prod",
+                  )
+                }
+              />
+            )}
+            {view === "guest" && (
+              <GuestSignIn
+                onBack={() => setView("choose")}
+                onContinue={(guest) =>
+                  enter(
+                    {
+                      mode: "guest",
+                      email: guest.email,
+                      country: guest.country,
+                      team: guest.team,
+                    },
+                    "Dev",
+                  )
+                }
+              />
+            )}
+            {view === "ready" && session && (
+              <AccessReady
+                session={session}
+                environment={environment}
+                onEnvironment={setEnvironment}
+                onSignup={() => setView("admin-signup")}
+                onRestart={() => setView("choose")}
+              />
+            )}
           </div>
-          <div>
-            <h1>RADIUS</h1>
-            <p>Rapid Analysis, Diagnostics, and Intelligence for Unified Support</p>
-          </div>
-        </div>
-        <h2>Welcome to RADIUS</h2>
-        <p className="lede">Rapid diagnostics. Smarter support. Faster resolution.</p>
-        <div className="radius-orbit" aria-hidden="true">
-          <div className="radius-orbit-core">RADIUS</div>
-          <div className="radius-node n1"><Workflow size={14} /> Order Processing</div>
-          <div className="radius-node n2"><Mail size={14} /> Message Queues</div>
-          <div className="radius-node n3"><Database size={14} /> DB2</div>
-          <div className="radius-node n4"><Server size={14} /> Seeburger</div>
-          <div className="radius-node n5"><Cloud size={14} /> APIs</div>
-          <div className="radius-node n6"><GitBranch size={14} /> Diagnostic Flows</div>
-        </div>
-        <p className="radius-vpn"><Lock size={14} /> Available through the company VPN.</p>
-      </section>
 
-      <div className="radius-panel-wrap">
-        {view === "choose" && <AccessChoices onSelect={setView} />}
-        {view === "admin" && (
-          <AdminSignIn
-            onBack={() => setView("choose")}
-            onSignedIn={(email) =>
-              enter(
-                { mode: "admin", email, country: "", role: "Administrator" },
-                "Prod",
-              )
-            }
-          />
-        )}
-        {(view === "prod-register" || view === "admin-signup") && (
-          <ProductionRegister
-            adminMode={view === "admin-signup"}
-            onBack={() => setView(view === "admin-signup" ? "ready" : "choose")}
-            onSignIn={() => setView("prod-signin")}
-            onGuest={() => setView("guest")}
-            onCreated={(user) =>
-              enter(
-                {
-                  mode: "production",
-                  email: user.email,
-                  country: user.country,
-                  role: user.role,
-                },
-                "Prod",
-              )
-            }
-          />
-        )}
-        {view === "prod-signin" && (
-          <ProductionSignIn
-            onBack={() => setView("choose")}
-            onRegister={() => setView("prod-register")}
-            onGuest={() => setView("guest")}
-            onSignedIn={(user) =>
-              enter(
-                {
-                  mode: "production",
-                  email: user.email,
-                  country: user.country,
-                  role: user.role,
-                },
-                "Prod",
-              )
-            }
-          />
-        )}
-        {view === "guest" && (
-          <GuestSignIn
-            onBack={() => setView("choose")}
-            onContinue={(guest) =>
-              enter(
-                {
-                  mode: "guest",
-                  email: guest.email,
-                  number: guest.number,
-                  country: guest.country,
-                  team: guest.team,
-                },
-                "Dev",
-              )
-            }
-          />
-        )}
-        {view === "ready" && session && (
-          <AccessReady
-            session={session}
-            environment={environment}
-            onEnvironment={setEnvironment}
-            onSignup={() => setView("admin-signup")}
-            onRestart={() => setView("choose")}
-          />
-        )}
+          <div
+            className="pointer-events-none relative -mt-8 h-[380px] overflow-visible"
+            aria-hidden="true"
+          >
+            <img
+              src={radiusWatermark}
+              alt=""
+              className="absolute left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 object-contain opacity-50"
+            />
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function Panel({ icon, title, subtitle, children }) {
+  return (
+    <section className="dashboard-search-card radius-access-card">
+      <div className="dashboard-search-title">
+        <div className="dashboard-search-icon">{icon}</div>
+        <div>
+          <h2>{title}</h2>
+          <p>{subtitle}</p>
+        </div>
       </div>
-    </main>
+      {children}
+    </section>
   );
 }
 
 function AccessChoices({ onSelect }) {
   return (
-    <section className="radius-panel">
-      <h3>Access RADIUS</h3>
-      <p className="sub">Choose how you want to continue.</p>
-      <button className="radius-choice primary" type="button" onClick={() => onSelect("admin")}>
-        <Shield size={16} /> Admin Sign In
-      </button>
-      <button className="radius-choice" type="button" onClick={() => onSelect("prod-register")}>
-        <UserRound size={16} /> Production Register
-      </button>
-      <button className="radius-choice primary" type="button" onClick={() => onSelect("prod-signin")}>
-        Production Sign In
-      </button>
-      <div className="radius-or">OR</div>
-      <button className="radius-choice" type="button" onClick={() => onSelect("guest")}>
-        <UserRound size={16} /> Guest Sign In
-      </button>
+    <Panel
+      icon={<Shield size={16} />}
+      title="Access RADIUS"
+      subtitle="Choose how you want to continue."
+    >
+      <div className="radius-actions">
+        <button className="dashboard-search-button" type="button" onClick={() => onSelect("admin")}>
+          <Shield size={15} /> Admin Sign In
+        </button>
+        <button className="radius-secondary" type="button" onClick={() => onSelect("prod-register")}>
+          <UserRound size={15} /> Production Register
+        </button>
+        <button className="dashboard-search-button" type="button" onClick={() => onSelect("prod-signin")}>
+          Production Sign In
+        </button>
+        <div className="radius-or">OR</div>
+        <button className="radius-secondary" type="button" onClick={() => onSelect("guest")}>
+          <UserRound size={15} /> Guest Sign In
+        </button>
+      </div>
       <p className="radius-note">
         Guest access includes Dev and QA only. Production stays visible and locked.
       </p>
-    </section>
+    </Panel>
   );
 }
 
@@ -202,22 +216,24 @@ function AdminSignIn({ onBack, onSignedIn }) {
   }
 
   return (
-    <section className="radius-panel">
-      <h3>Admin Sign In</h3>
-      <p className="sub">Enter admin credentials. Signup for production users opens after you sign in.</p>
-      <form onSubmit={submit}>
-        <Field label="Admin email" type="email" value={email} onChange={setEmail} />
-        <Field label="Password" type="password" value={password} onChange={setPassword} />
+    <Panel
+      icon={<Shield size={16} />}
+      title="Admin Sign In"
+      subtitle="Enter admin credentials. Signup for production users opens after you sign in."
+    >
+      <form onSubmit={submit} className="radius-form">
+        <Field label="Admin email" type="email" icon={<Mail size={15} />} value={email} onChange={setEmail} />
+        <Field label="Password" type="password" icon={<Lock size={15} />} value={password} onChange={setPassword} />
         {error && <div className="radius-error">{error}</div>}
-        <button className="radius-btn" type="submit">Sign In</button>
+        <button className="dashboard-search-button" type="submit">Sign In</button>
       </form>
-      <div className="radius-demo">
+      <p className="radius-demo">
         Sample admin: {DEMO_ACCOUNTS.admin.email} / {DEMO_ACCOUNTS.admin.password}
-      </div>
-      <button className="radius-link radius-back" type="button" onClick={onBack}>
+      </p>
+      <button className="radius-link" type="button" onClick={onBack}>
         Back to access options
       </button>
-    </section>
+    </Panel>
   );
 }
 
@@ -237,31 +253,31 @@ function ProductionSignIn({ onBack, onRegister, onGuest, onSignedIn }) {
   }
 
   return (
-    <section className="radius-panel">
-      <h3>Production Sign In</h3>
-      <p className="sub">For users who already have production access.</p>
-      <form onSubmit={submit}>
-        <Field label="Company email" type="email" value={email} onChange={setEmail} />
-        <Field label="Password" type="password" value={password} onChange={setPassword} />
+    <Panel
+      icon={<Lock size={16} />}
+      title="Production Sign In"
+      subtitle="For users who already have production access."
+    >
+      <form onSubmit={submit} className="radius-form">
+        <Field label="Company email" type="email" icon={<Mail size={15} />} value={email} onChange={setEmail} />
+        <Field label="Password" type="password" icon={<Lock size={15} />} value={password} onChange={setPassword} />
         {error && <div className="radius-error">{error}</div>}
-        <button className="radius-btn" type="submit">Sign In</button>
+        <button className="dashboard-search-button" type="submit">Sign In</button>
       </form>
-      <div className="radius-demo">
+      <p className="radius-demo">
         Sample production user: {DEMO_ACCOUNTS.production.email} / {DEMO_ACCOUNTS.production.password}
-      </div>
-      <div className="radius-row">
-        <button className="radius-link" type="button" onClick={onRegister}>
-          New to RADIUS? Register for production
-        </button>
-      </div>
+      </p>
+      <button className="radius-link" type="button" onClick={onRegister}>
+        New to RADIUS? Register for production
+      </button>
       <div className="radius-or">OR</div>
-      <button className="radius-choice" type="button" onClick={onGuest}>
+      <button className="radius-secondary" type="button" onClick={onGuest}>
         Continue as Guest
       </button>
-      <button className="radius-link radius-back" type="button" onClick={onBack}>
+      <button className="radius-link" type="button" onClick={onBack}>
         Back to access options
       </button>
-    </section>
+    </Panel>
   );
 }
 
@@ -307,14 +323,15 @@ function ProductionRegister({ adminMode = false, onBack, onSignIn, onGuest, onCr
   }
 
   return (
-    <section className="radius-panel">
-      <h3>{adminMode ? "Production signup" : "Production Register"}</h3>
-      <p className="sub">
-        {adminMode
+    <Panel
+      icon={<UserRound size={16} />}
+      title={adminMode ? "Production signup" : "Production Register"}
+      subtitle={
+        adminMode
           ? "Admin registration can add a production user."
-          : "Tell us your email, country, and role. Approved company emails can create a password."}
-      </p>
-
+          : "Tell us your email, country, and role. Approved company emails can create a password."
+      }
+    >
       {state === "blocked" && (
         <div className="radius-error">
           {email} is not authorised to register for production access. Continue as a guest to use Dev and QA.
@@ -326,10 +343,17 @@ function ProductionRegister({ adminMode = false, onBack, onSignIn, onGuest, onCr
         </div>
       )}
 
-      <form onSubmit={state === "create" ? createAccount : review}>
-        <Field label="Company email" type="email" value={form.email} onChange={(value) => update("email", value)} />
+      <form onSubmit={state === "create" ? createAccount : review} className="radius-form">
+        <Field
+          label="Company email"
+          type="email"
+          icon={<Mail size={15} />}
+          value={form.email}
+          onChange={(value) => update("email", value)}
+        />
         <SelectField
           label="Country"
+          icon={<Globe size={15} />}
           value={form.country}
           onChange={(value) => update("country", value)}
           placeholder="Select country"
@@ -340,6 +364,7 @@ function ProductionRegister({ adminMode = false, onBack, onSignIn, onGuest, onCr
         />
         <SelectField
           label="Role"
+          icon={<Shield size={15} />}
           value={form.role}
           onChange={(value) => update("role", value)}
           placeholder="Select role"
@@ -348,8 +373,20 @@ function ProductionRegister({ adminMode = false, onBack, onSignIn, onGuest, onCr
 
         {state === "create" && (
           <>
-            <Field label="Create password" type="password" value={form.password} onChange={(value) => update("password", value)} />
-            <Field label="Confirm password" type="password" value={form.confirm} onChange={(value) => update("confirm", value)} />
+            <Field
+              label="Create password"
+              type="password"
+              icon={<Lock size={15} />}
+              value={form.password}
+              onChange={(value) => update("password", value)}
+            />
+            <Field
+              label="Confirm password"
+              type="password"
+              icon={<Lock size={15} />}
+              value={form.confirm}
+              onChange={(value) => update("confirm", value)}
+            />
             <ul className="radius-rules">
               <li className={rules.length ? "ok" : ""}>At least 8 characters</li>
               <li className={rules.upper ? "ok" : ""}>One uppercase letter</li>
@@ -364,58 +401,56 @@ function ProductionRegister({ adminMode = false, onBack, onSignIn, onGuest, onCr
         )}
 
         {state !== "already" && state !== "blocked" && (
-          <button className="radius-btn" type="submit" disabled={!profileReady}>
+          <button className="dashboard-search-button" type="submit" disabled={!profileReady}>
             {state === "create" ? "Create Account" : "Continue"}
           </button>
         )}
       </form>
 
       {state === "blocked" && (
-        <button className="radius-choice" type="button" onClick={onGuest}>Continue as Guest</button>
+        <button className="radius-secondary" type="button" onClick={onGuest}>Continue as Guest</button>
       )}
       {state === "already" && (
-        <button className="radius-btn" type="button" onClick={onSignIn}>Go to Sign In</button>
+        <button className="dashboard-search-button" type="button" onClick={onSignIn}>Go to Sign In</button>
       )}
       <p className="radius-note">Registration is available only to approved production users.</p>
-      <div className="radius-demo">
+      <p className="radius-demo">
         Try new.prod@ingrammicro.com to create an account, or anyone@example.com to see the guest path.
-      </div>
-      <button className="radius-link radius-back" type="button" onClick={onBack}>
+      </p>
+      <button className="radius-link" type="button" onClick={onBack}>
         Back to access options
       </button>
-    </section>
+    </Panel>
   );
 }
 
 function GuestSignIn({ onBack, onContinue }) {
   const [email, setEmail] = useState("");
-  const [number, setNumber] = useState("");
   const [country, setCountry] = useState("");
   const [team, setTeam] = useState("");
-  const ready = email.includes("@") && number.trim() && country && team;
+  const ready = email.includes("@") && country && team;
 
   function submit(event) {
     event.preventDefault();
     if (!ready) return;
     onContinue({
       email: email.trim().toLowerCase(),
-      number: number.trim(),
       country,
       team,
     });
   }
 
   return (
-    <section className="radius-panel">
-      <h3>Guest Sign In</h3>
-      <p className="sub">
-        No password is required. Your email, number, country, and team are kept for the access log.
-      </p>
-      <form onSubmit={submit}>
-        <Field label="Email" type="email" value={email} onChange={setEmail} />
-        <Field label="Contact number" type="text" value={number} onChange={setNumber} />
+    <Panel
+      icon={<Sparkles size={16} />}
+      title="Guest Sign In"
+      subtitle="No password is required. Your email, country, and team are kept for the access log."
+    >
+      <form onSubmit={submit} className="radius-form">
+        <Field label="Email" type="email" icon={<Mail size={15} />} value={email} onChange={setEmail} />
         <SelectField
           label="Country"
+          icon={<Globe size={15} />}
           value={country}
           onChange={setCountry}
           placeholder="Select country"
@@ -426,19 +461,20 @@ function GuestSignIn({ onBack, onContinue }) {
         />
         <SelectField
           label="Team"
+          icon={<Users size={15} />}
           value={team}
           onChange={setTeam}
           placeholder="Select team"
           options={GUEST_TEAMS.map((item) => ({ value: item, label: item }))}
         />
-        <button className="radius-btn" type="submit" disabled={!ready}>
+        <button className="dashboard-search-button" type="submit" disabled={!ready}>
           Continue as Guest
         </button>
       </form>
-      <button className="radius-link radius-back" type="button" onClick={onBack}>
+      <button className="radius-link" type="button" onClick={onBack}>
         Back to access options
       </button>
-    </section>
+    </Panel>
   );
 }
 
@@ -451,19 +487,24 @@ function AccessReady({ session, environment, onEnvironment, onSignup, onRestart 
   ];
 
   return (
-    <section className="radius-panel">
-      <h3>
-        {session.mode === "admin" && "Admin access"}
-        {session.mode === "production" && "Production access"}
-        {session.mode === "guest" && "Guest access"}
-      </h3>
-      <p className="sub">
-        Signed in as {session.email}
-        {session.role ? ` · ${session.role}` : ""}
-        {session.team ? ` · ${session.team}` : ""}
-        {session.country ? ` · ${session.country}` : ""}
-        {session.number ? ` · ${session.number}` : ""}
-      </p>
+    <Panel
+      icon={<Sparkles size={16} />}
+      title={
+        session.mode === "admin"
+          ? "Admin access"
+          : session.mode === "production"
+            ? "Production access"
+            : "Guest access"
+      }
+      subtitle={[
+        `Signed in as ${session.email}`,
+        session.role,
+        session.team,
+        session.country,
+      ]
+        .filter(Boolean)
+        .join(" · ")}
+    >
       <div className="radius-success">
         {productionEnabled
           ? "Production, QA, and Dev are available in the environment dropdown."
@@ -484,41 +525,48 @@ function AccessReady({ session, environment, onEnvironment, onSignup, onRestart 
         ))}
       </div>
       {session.mode === "admin" && (
-        <button className="radius-choice" type="button" onClick={onSignup} style={{ marginTop: 14 }}>
+        <button className="radius-secondary" type="button" onClick={onSignup}>
           Open production signup
         </button>
       )}
-      <button className="radius-btn" type="button" onClick={goToDashboard} style={{ marginTop: 14 }}>
+      <button className="dashboard-search-button" type="button" onClick={goToDashboard}>
         Continue to dashboard
       </button>
-      <button className="radius-link radius-back" type="button" onClick={onRestart}>
+      <button className="radius-link" type="button" onClick={onRestart}>
         Use a different access option
       </button>
-    </section>
+    </Panel>
   );
 }
 
-function Field({ label, type, value, onChange }) {
+function Field({ label, type, icon, value, onChange }) {
   return (
-    <label className="radius-field">
+    <label className="dashboard-search-field">
       {label}
-      <input type={type} value={value} onChange={(event) => onChange(event.target.value)} />
+      <span className="dashboard-input">
+        {icon}
+        <input type={type} value={value} onChange={(event) => onChange(event.target.value)} />
+      </span>
     </label>
   );
 }
 
-function SelectField({ label, value, onChange, placeholder, options }) {
+function SelectField({ label, icon, value, onChange, placeholder, options }) {
   return (
-    <label className="radius-field">
+    <label className="dashboard-search-field">
       {label}
-      <select value={value} onChange={(event) => onChange(event.target.value)}>
-        <option value="">{placeholder}</option>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      <span className="dashboard-input dashboard-select">
+        {icon}
+        <select value={value} onChange={(event) => onChange(event.target.value)}>
+          <option value="">{placeholder}</option>
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <ChevronDown size={14} className="dashboard-select-chevron" />
+      </span>
     </label>
   );
 }
