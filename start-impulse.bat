@@ -47,7 +47,7 @@ if errorlevel 1 (
   goto :open
 )
 
-echo Starting the API at http://localhost:5298/
+echo Starting the API at http://10.24.169.28:7010/
 if exist "%~dp0backend-dotnet\set-ods-secrets.bat" (
   echo Loading ODS passwords from backend-dotnet\set-ods-secrets.bat
   start "Impulse API" /D "%~dp0backend-dotnet\ImpulseSupportTool_Repo" cmd /k "call ..\set-ods-secrets.bat && dotnet run --launch-profile http"
@@ -58,10 +58,10 @@ if exist "%~dp0backend-dotnet\set-ods-secrets.bat" (
 
 :open
 timeout /t 3 /nobreak >nul
-start "" "http://10.129.180.117:5173/"
+start "" "http://10.24.169.28:7011/"
 echo.
-echo Dashboard: http://10.129.180.117:5173/
-echo API:       http://localhost:5298/swagger
+echo Dashboard: http://10.24.169.28:7011/
+echo API:       http://10.24.169.28:7011/swagger
 echo.
 echo Mock data is on when my-dashboard\.env.local has VITE_USE_MOCK_API=true.
 echo Set that value to false to call the API. The API also needs the ODS user-secret passwords.

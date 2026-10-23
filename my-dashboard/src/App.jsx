@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   FileText,
   ListOrdered,
@@ -25,7 +25,7 @@ import FlowTraceStatus from "./components/flow/FlowTraceStatus";
 import SetupConfigDetails from "./components/PartnerSetup/SetupConfigDetails";
 
 import DatadogPanel from "./components/monitoring/DatadogPanel";
-
+// import Login from "./components/auth/Login";
 import PoSwitchSection from "./components/order/PoSwitchSection";
 import ProcessFlowSection from "./components/order/ProcessFlowSection";
 
@@ -37,6 +37,11 @@ import {
 } from "./components/common/StatusStates";
 
 import { useOrderSearch } from "./hooks/useOrderSearch";
+import AnalyticsDashboard from "./components/analytics/AnalyticsDashboard";
+import {
+  trackTabView,
+  trackOrderSearch,
+} from "./utils/analyticsTracking";
 
 // ============================================================
 // EXPORT HELPERS
@@ -85,18 +90,89 @@ function exportAsCSV(rows, filenameBase) {
 }
 
 // ============================================================
+// ANALYTICS TAB-ID MAP — matches the identifiers the backend expects
+// exactly. This project's internal tab ids already match 1:1, no
+// translation needed, but kept as an explicit map so a future tab id
+// rename doesn't silently break analytics without anyone noticing.
+// ============================================================
+
+const TAB_ANALYTICS_IDS = {
+  order: "order_details",
+  lineItems: "line_items",
+  processing: "processing_flow",
+  flowTrace: "flow_trace_status",
+  poSwitch: "po_switch",
+  setup: "setup_configuration",
+  logs: "logs_export",
+};
+
+// ============================================================
 // MAIN DASHBOARD
 // ============================================================
 
 export default function Dashboard() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [activePage, setActivePage] = useState("search");
 
   // Default tab after successful search
   const [activeTab, setActiveTab] = useState("order");
 
   const { data, status, error, search, reset } = useOrderSearch();
 
+  // ============================================================
+  // ANALYTICS TRACKING
+  // ============================================================
+
+  // Tracks a tab_view event only when the user actually switches tabs
+  // (and only once results are showing) — not on every re-render.
+  const lastTrackedTab = useRef(null);
+
+  useEffect(() => {
+    if (status !== "success") return;
+    const analyticsId = TAB_ANALYTICS_IDS[activeTab];
+    if (analyticsId && lastTrackedTab.current !== activeTab) {
+      trackTabView(analyticsId);
+      lastTrackedTab.current = activeTab;
+    }
+  }, [activeTab, status]);
+
+  // Count every completed search attempt, even when consecutive searches
+  // end with the same status (for example, success followed by success).
+  const searchAttemptRef = useRef(0);
+  const loadingAttemptRef = useRef(0);
+  const lastTrackedAttemptRef = useRef(0);
+
+  const handleOrderSearch = async (searchData) => {
+    searchAttemptRef.current += 1;
+    await search(searchData);
+  };
+
+  useEffect(() => {
+    if (status === "loading") {
+      loadingAttemptRef.current = searchAttemptRef.current;
+      return;
+    }
+
+    if (status === "idle") return;
+
+    const attempt = loadingAttemptRef.current;
+    if (
+      !attempt ||
+      attempt !== searchAttemptRef.current ||
+      attempt === lastTrackedAttemptRef.current
+    ) {
+      return;
+    }
+
+    if (status === "success") {
+      trackOrderSearch("success");
+      lastTrackedAttemptRef.current = attempt;
+    } else if (status === "empty" || status === "error") {
+      trackOrderSearch("failure");
+      lastTrackedAttemptRef.current = attempt;
+    }
+  }, [status]);
   // ============================================================
   // TABS
   // ============================================================
@@ -242,6 +318,8 @@ export default function Dashboard() {
         setCollapsed={setSidebarCollapsed}
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
+        activeId={activePage}
+        onNavigate={setActivePage}
       />
 
       {/* ========================================================
@@ -253,12 +331,15 @@ export default function Dashboard() {
           sidebarCollapsed ? "md:ml-[60px]" : "md:ml-[200px]"
         }`}
       >
+        {activePage === "analytics" ? (
+          <AnalyticsDashboard />
+        ) : (
         <div className="p-4 md:p-5 max-w-[1400px] mx-auto relative">
           {/* ======================================================
               DASHBOARD SEARCH
           ====================================================== */}
 
-          <DashboardSearch onSearch={search} loading={status === "loading"} />
+          <DashboardSearch onSearch={handleOrderSearch} loading={status === "loading"} />
 
           {/* ======================================================
               RADIUS WATERMARK
@@ -496,6 +577,7 @@ export default function Dashboard() {
             </div>
           </div> */}
         </div>
+        )}
       </main>
     </div>
   );

@@ -16,7 +16,7 @@ namespace ImpulseSupportTool_Repo
         public string? CapsIdCd { get; set; }
         public string? Terms { get; set; }
         public string? ResdntlSw { get; set; }
-        public string? OrdrStatus { get; set; }
+        public string? BordrStatus { get; set; }
         public string? OrdrCmpltFillSw { get; set; }
         public string? CrRels { get; set; }
         public string? EntyDt { get; set; }

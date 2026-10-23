@@ -134,7 +134,7 @@ export function mapOrderResponse(raw) {
     // IMPORTANT:
     // Backend property is OrdrStatus
     // Therefore JSON key is ordrStatus
-    ordrStatus: raw.ordrStatus ?? null,
+    bordrStatus: raw.bordrStatus ?? null,
 
     ordrCmpltFillSw: raw.ordrCmpltFillSw ?? null,
     crRels: raw.crRels ?? null,

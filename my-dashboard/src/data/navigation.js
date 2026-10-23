@@ -11,10 +11,12 @@ import {
   Settings,
   Wrench,
 } from "lucide-react";
+import { ChartNoAxesColumnIncreasing } from "lucide-react";
 
 export const NAV_ITEMS = [
   // { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
   { icon: Search, label: "Search", id: "search", active: true },
+  { icon: ChartNoAxesColumnIncreasing, label: "Usage Analytics", id: "analytics" },
   // { icon: ShoppingCart, label: "Orders", id: "orders" },
   // { icon: ArrowLeftRight, label: "Transactions", id: "transactions" },
   // { icon: Activity, label: "Monitoring", id: "monitoring", expandable: true },

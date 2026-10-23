@@ -192,7 +192,7 @@ namespace OrderManagement.API.Repositories
                     CapsIdCd = reader["CAPS_ID_CD"]?.ToString()?.Trim(),
                     Terms = reader["TERMS"]?.ToString()?.Trim(),
                     ResdntlSw = reader["RESDNTL_SW"]?.ToString()?.Trim(),
-                    OrdrStatus = reader["BORDR_STUS"]?.ToString()?.Trim(),
+                    BordrStatus = reader["BORDR_STUS"]?.ToString()?.Trim(),
                     OrdrCmpltFillSw = reader["ORDR_CMPLT_FILL_SW"]?.ToString()?.Trim(),
                     CrRels = reader["CR_RELS"]?.ToString()?.Trim(),
                     EntyDt = reader["ENTY_DT"]?.ToString()?.Trim(),

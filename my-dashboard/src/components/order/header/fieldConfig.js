@@ -168,8 +168,8 @@ export const FIELD_GROUPS = [
         type: "id",
       },
       {
-        key: "ordrStatus",
-        label: "Order Status",
+        key: "bordrStatus",
+        label: "Back Order Status",
         type: "text",
       },
       {
