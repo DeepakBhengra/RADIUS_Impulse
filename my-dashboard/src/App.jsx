@@ -123,7 +123,13 @@ export default function Dashboard() {
   useEffect(() => {
     const syncPage = () => {
       const page = pageFromHash();
-      if (page) setActivePage(page);
+      if (page) {
+        setActivePage(page);
+        return;
+      }
+      if ((window.location.hash || "").startsWith("#/app")) {
+        setActivePage((current) => (current === "account" ? "search" : current));
+      }
     };
     window.addEventListener("hashchange", syncPage);
     return () => window.removeEventListener("hashchange", syncPage);

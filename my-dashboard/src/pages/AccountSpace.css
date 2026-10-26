@@ -1,6 +1,6 @@
 .account-space {
   padding: 16px 20px 32px;
-  max-width: 1100px;
+  max-width: 1240px;
   margin: 0 auto;
 }
 
@@ -45,7 +45,7 @@
 
 .account-row {
   display: grid;
-  grid-template-columns: minmax(180px, 1.4fr) minmax(140px, 1fr) minmax(120px, 0.8fr) minmax(160px, 1fr) auto;
+  grid-template-columns: minmax(170px, 1.3fr) minmax(110px, 0.8fr) minmax(100px, 0.7fr) minmax(120px, 0.8fr) minmax(120px, 0.8fr) minmax(170px, 1fr) auto;
   gap: 12px;
   align-items: center;
   padding: 12px;
@@ -70,15 +70,40 @@
   font-weight: 600;
 }
 
+.account-password {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
 .account-row code {
   display: inline-flex;
-  margin-top: 2px;
   padding: 4px 8px;
   border-radius: 6px;
   background: #eff6ff;
   color: #1468d9;
   font-size: 12px;
   font-weight: 700;
+}
+
+.account-copy {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid #dbe5f2;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1468d9;
+  cursor: pointer;
+}
+
+.account-copy:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
 }
 
 .account-approve {
@@ -114,8 +139,19 @@
   background: #ffffff;
 }
 
-.account-signout {
+.account-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
   margin-top: 14px;
+}
+
+.account-back,
+.account-signout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
   padding: 0;
   border: none;
   background: transparent;
@@ -123,6 +159,11 @@
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+}
+
+.account-back:hover,
+.account-signout:hover {
+  color: #0f5fc9;
 }
 
 @media (max-width: 800px) {

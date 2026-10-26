@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Check, Copy, ShieldCheck } from "lucide-react";
 import {
   COUNTRIES,
   approveAllPending,
@@ -31,6 +31,30 @@ function formatWhen(iso) {
 function signOut() {
   clearSession();
   window.location.hash = "#/login";
+}
+
+function backToRadius() {
+  window.location.hash = "#/app";
+}
+
+async function copyText(value) {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return;
+    }
+  } catch {
+    // Fall through to the selection copy below.
+  }
+  const area = document.createElement("textarea");
+  area.value = value;
+  area.setAttribute("readonly", "");
+  area.style.position = "fixed";
+  area.style.left = "-9999px";
+  document.body.appendChild(area);
+  area.select();
+  document.execCommand("copy");
+  area.remove();
 }
 
 export default function AccountSpace() {
@@ -96,9 +120,14 @@ function AdminApprovals() {
 
         {approved.length > 0 && <RequestTable title="Approved" requests={approved} />}
       </section>
-      <button className="account-signout" type="button" onClick={signOut}>
-        Sign out
-      </button>
+      <div className="account-actions">
+        <button className="account-back" type="button" onClick={backToRadius}>
+          <ArrowLeft size={14} /> Back to RADIUS
+        </button>
+        <button className="account-signout" type="button" onClick={signOut}>
+          Sign out
+        </button>
+      </div>
     </div>
   );
 }
@@ -123,11 +152,19 @@ function RequestTable({ title, requests, onApprove }) {
               <strong>{request.role}</strong>
             </div>
             <div>
-              <span>{request.status === "approved" ? "Temporary password" : "Requested"}</span>
-              {request.status === "approved" ? (
-                <code>{request.temporaryPassword}</code>
+              <span>Request date</span>
+              <strong>{formatWhen(request.requestedAt)}</strong>
+            </div>
+            <div>
+              <span>Approval date</span>
+              <strong>{formatWhen(request.approvedAt)}</strong>
+            </div>
+            <div>
+              <span>Temporary password</span>
+              {request.temporaryPassword ? (
+                <PasswordValue value={request.temporaryPassword} />
               ) : (
-                <strong>{formatWhen(request.requestedAt)}</strong>
+                <strong>—</strong>
               )}
             </div>
             {onApprove && (
@@ -138,6 +175,30 @@ function RequestTable({ title, requests, onApprove }) {
           </article>
         ))}
       </div>
+    </div>
+  );
+}
+
+function PasswordValue({ value }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copy() {
+    await copyText(value);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1500);
+  }
+
+  return (
+    <div className="account-password">
+      <code>{value}</code>
+      <button
+        type="button"
+        className="account-copy"
+        onClick={copy}
+        aria-label={copied ? "Temporary password copied" : "Copy temporary password"}
+      >
+        {copied ? <Check size={14} /> : <Copy size={14} />}
+      </button>
     </div>
   );
 }
@@ -184,9 +245,14 @@ function PersonalProfile({ session }) {
           </div>
         </dl>
       </section>
-      <button className="account-signout" type="button" onClick={signOut}>
-        Sign out
-      </button>
+      <div className="account-actions">
+        <button className="account-back" type="button" onClick={backToRadius}>
+          <ArrowLeft size={14} /> Back to RADIUS
+        </button>
+        <button className="account-signout" type="button" onClick={signOut}>
+          Sign out
+        </button>
+      </div>
     </div>
   );
 }

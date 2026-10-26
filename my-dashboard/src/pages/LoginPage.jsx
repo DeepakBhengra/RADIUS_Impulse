@@ -243,7 +243,7 @@ function ProductionRegister({ onBack, onSignIn }) {
   const [form, setForm] = useState(EMPTY_REGISTER);
   const [result, setResult] = useState(null);
   const email = form.email.trim().toLowerCase();
-  const profileReady = email.includes("@") && form.country && form.role;
+  const profileReady = email.includes("@") && form.country && form.role.trim();
 
   function update(key, value) {
     setResult(null);
@@ -253,7 +253,7 @@ function ProductionRegister({ onBack, onSignIn }) {
   function submit(event) {
     event.preventDefault();
     if (!profileReady) return;
-    setResult(submitApprovalRequest({ email, country: form.country, role: form.role }));
+    setResult(submitApprovalRequest({ email, country: form.country, role: form.role.trim() }));
   }
 
   return (
@@ -298,14 +298,7 @@ function ProductionRegister({ onBack, onSignIn }) {
               label: `${country.code} — ${country.name}`,
             }))}
           />
-          <SelectField
-            label="Role"
-            icon={<Shield size={15} />}
-            value={form.role}
-            onChange={(value) => update("role", value)}
-            placeholder="Select role"
-            options={PROD_ROLES.map((role) => ({ value: role, label: role }))}
-          />
+          <RoleField value={form.role} onChange={(value) => update("role", value)} />
           <button className="dashboard-search-button" type="submit" disabled={!profileReady}>
             Request approval
           </button>
@@ -332,7 +325,7 @@ function GuestSignIn({ onBack, onContinue }) {
   const [email, setEmail] = useState("");
   const [country, setCountry] = useState("");
   const [role, setRole] = useState("");
-  const ready = name.trim() && email.includes("@") && country && role;
+  const ready = name.trim() && email.includes("@") && country && role.trim();
 
   function submit(event) {
     event.preventDefault();
@@ -341,7 +334,7 @@ function GuestSignIn({ onBack, onContinue }) {
       name: name.trim(),
       email: email.trim().toLowerCase(),
       country,
-      role,
+      role: role.trim(),
     });
   }
 
@@ -365,14 +358,7 @@ function GuestSignIn({ onBack, onContinue }) {
             label: `${item.code} — ${item.name}`,
           }))}
         />
-        <SelectField
-          label="Role"
-          icon={<Shield size={15} />}
-          value={role}
-          onChange={setRole}
-          placeholder="Select role"
-          options={PROD_ROLES.map((item) => ({ value: item, label: item }))}
-        />
+        <RoleField value={role} onChange={setRole} />
         <button className="dashboard-search-button" type="submit" disabled={!ready}>
           Continue as Guest
         </button>
@@ -384,13 +370,58 @@ function GuestSignIn({ onBack, onContinue }) {
   );
 }
 
-function Field({ label, type, icon, value, onChange }) {
+function RoleField({ value, onChange }) {
+  const preset = PROD_ROLES.includes(value);
+  const [otherMode, setOtherMode] = useState(Boolean(value) && !preset);
+  const selected = otherMode ? "Others" : value;
+
+  return (
+    <>
+      <SelectField
+        label="Role"
+        icon={<Shield size={15} />}
+        value={selected}
+        onChange={(next) => {
+          if (next === "Others") {
+            setOtherMode(true);
+            onChange("");
+            return;
+          }
+          setOtherMode(false);
+          onChange(next);
+        }}
+        placeholder="Select role"
+        options={[
+          ...PROD_ROLES.map((role) => ({ value: role, label: role })),
+          { value: "Others", label: "Others" },
+        ]}
+      />
+      {otherMode && (
+        <Field
+          label="Other role"
+          type="text"
+          icon={<Shield size={15} />}
+          value={preset ? "" : value}
+          onChange={onChange}
+          placeholder="Type the role"
+        />
+      )}
+    </>
+  );
+}
+
+function Field({ label, type, icon, value, onChange, placeholder }) {
   return (
     <label className="dashboard-search-field">
       {label}
       <span className="dashboard-input">
         {icon}
-        <input type={type} value={value} onChange={(event) => onChange(event.target.value)} />
+        <input
+          type={type}
+          value={value}
+          placeholder={placeholder}
+          onChange={(event) => onChange(event.target.value)}
+        />
       </span>
     </label>
   );
