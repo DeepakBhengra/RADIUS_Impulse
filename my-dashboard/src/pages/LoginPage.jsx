@@ -41,6 +41,8 @@ const PAGE_BACKGROUND = `
 export default function LoginPage() {
   const [view, setView] = useState("choose");
   const [pendingUser, setPendingUser] = useState(null);
+  const [signInEmail, setSignInEmail] = useState("");
+  const [signInNotice, setSignInNotice] = useState("");
 
   function enter(nextSession) {
     saveSession(nextSession);
@@ -70,8 +72,16 @@ export default function LoginPage() {
             )}
             {view === "prod-signin" && (
               <ProductionSignIn
-                onBack={() => setView("choose")}
-                onRegister={() => setView("prod-register")}
+                initialEmail={signInEmail}
+                notice={signInNotice}
+                onBack={() => {
+                  setSignInNotice("");
+                  setView("choose");
+                }}
+                onRegister={() => {
+                  setSignInNotice("");
+                  setView("prod-register");
+                }}
                 onGuest={() => setView("guest")}
                 onSignedIn={(user) => {
                   if (user.temporary) {
@@ -93,15 +103,12 @@ export default function LoginPage() {
               <ChangePassword
                 user={pendingUser}
                 onBack={() => setView("prod-signin")}
-                onChanged={(user) =>
-                  enter({
-                    mode: "production",
-                    email: user.email,
-                    name: user.name,
-                    country: user.country,
-                    role: user.role,
-                  })
-                }
+                onChanged={(user) => {
+                  setPendingUser(null);
+                  setSignInEmail(user.email);
+                  setSignInNotice("Password is changed");
+                  setView("prod-signin");
+                }}
               />
             )}
             {view === "guest" && (
@@ -220,8 +227,8 @@ function AdminSignIn({ onBack, onSignedIn }) {
   );
 }
 
-function ProductionSignIn({ onBack, onRegister, onGuest, onSignedIn }) {
-  const [email, setEmail] = useState(DEMO_ACCOUNTS.production.email);
+function ProductionSignIn({ onBack, onRegister, onGuest, onSignedIn, initialEmail = "", notice = "" }) {
+  const [email, setEmail] = useState(initialEmail || DEMO_ACCOUNTS.production.email);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
@@ -241,6 +248,7 @@ function ProductionSignIn({ onBack, onRegister, onGuest, onSignedIn }) {
       title="Production Sign In"
       subtitle="For users who already have production access."
     >
+      {notice && <div className="radius-success">{notice}</div>}
       <form onSubmit={submit} className="radius-form">
         <Field label="Company email" type="email" icon={<Mail size={15} />} value={email} onChange={setEmail} />
         <Field label="Password" type="password" icon={<Lock size={15} />} value={password} onChange={setPassword} />
@@ -389,7 +397,7 @@ function ChangePassword({ user, onBack, onChanged }) {
     <Panel
       icon={<Lock size={16} />}
       title="Change password"
-      subtitle={`The temporary password for ${user.email} can be used once. Set a new password to open RADIUS.`}
+      subtitle={`The temporary password for ${user.email} can be used once. Set a new password, then sign in again.`}
     >
       <form onSubmit={submit} className="radius-form">
         <Field label="New password" type="password" icon={<Lock size={15} />} value={password} onChange={setPassword} />
