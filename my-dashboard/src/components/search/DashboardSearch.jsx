@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { environmentChoices, readSession } from "../../auth/accessSession";
+import { displayName, environmentChoices, readSession } from "../../auth/accessSession";
 
 import {
   Search,
@@ -771,6 +771,8 @@ export default function DashboardSearch({
     setRecentSearches([]);
   };
 
+  const greetingName = displayName(readSession());
+
 
   return (
     <section className="dashboard-search-area">
@@ -823,7 +825,9 @@ export default function DashboardSearch({
           <div>
 
             <h2>
-            Hey Good day! Let's analyze, diagnose, and resolve.
+            {greetingName
+              ? `Hey Good day, ${greetingName}! Let's analyze, diagnose, and resolve.`
+              : "Hey Good day! Let's analyze, diagnose, and resolve."}
             </h2>
 
             <p>

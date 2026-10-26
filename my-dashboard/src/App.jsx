@@ -12,6 +12,7 @@ import {
 
 import Header from "./components/layout/Header";
 import Sidebar from "./components/layout/Sidebar";
+import AccountSpace from "./pages/AccountSpace";
 
 import DashboardSearch from "./components/search/DashboardSearch";
 import "./components/search/DashboardSearch.css";
@@ -110,10 +111,32 @@ const TAB_ANALYTICS_IDS = {
 // MAIN DASHBOARD
 // ============================================================
 
+function pageFromHash() {
+  return (window.location.hash || "").startsWith("#/account") ? "account" : "";
+}
+
 export default function Dashboard() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [activePage, setActivePage] = useState("search");
+  const [activePage, setActivePage] = useState(() => pageFromHash() || "search");
+
+  useEffect(() => {
+    const syncPage = () => {
+      const page = pageFromHash();
+      if (page) setActivePage(page);
+    };
+    window.addEventListener("hashchange", syncPage);
+    return () => window.removeEventListener("hashchange", syncPage);
+  }, []);
+
+  function navigate(id) {
+    setActivePage(id);
+    if (id === "account") {
+      window.location.hash = "#/account";
+    } else if ((window.location.hash || "").startsWith("#/account")) {
+      window.location.hash = "#/app";
+    }
+  }
 
   // Default tab after successful search
   const [activeTab, setActiveTab] = useState("order");
@@ -307,7 +330,10 @@ export default function Dashboard() {
           HEADER
       ======================================================== */}
 
-      <Header toggleSidebar={() => setMobileOpen(!mobileOpen)} />
+      <Header
+        toggleSidebar={() => setMobileOpen(!mobileOpen)}
+        onAccount={() => navigate("account")}
+      />
 
       {/* ========================================================
           SIDEBAR
@@ -319,7 +345,7 @@ export default function Dashboard() {
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
         activeId={activePage}
-        onNavigate={setActivePage}
+        onNavigate={navigate}
       />
 
       {/* ========================================================
@@ -333,6 +359,8 @@ export default function Dashboard() {
       >
         {activePage === "analytics" ? (
           <AnalyticsDashboard />
+        ) : activePage === "account" ? (
+          <AccountSpace />
         ) : (
         <div className="p-4 md:p-5 max-w-[1400px] mx-auto relative">
           {/* ======================================================

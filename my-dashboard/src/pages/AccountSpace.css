@@ -1,0 +1,133 @@
+.account-space {
+  padding: 16px 20px 32px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.account-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  color: #334e73;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.account-approve-all {
+  width: auto;
+  min-width: 140px;
+}
+
+.account-empty {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.account-block {
+  margin-top: 8px;
+}
+
+.account-block h3 {
+  margin: 12px 0 8px;
+  color: #172554;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.account-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.account-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.4fr) minmax(140px, 1fr) minmax(120px, 0.8fr) minmax(160px, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #dbe5f2;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.account-row strong,
+.account-profile dd {
+  display: block;
+  color: #1e3a5f;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.account-row span,
+.account-profile dt {
+  display: block;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.account-row code {
+  display: inline-flex;
+  margin-top: 2px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #eff6ff;
+  color: #1468d9;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.account-approve {
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 18px;
+  background: #1468d9;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.account-approve:hover {
+  background: #0f5fc9;
+}
+
+.account-profile {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.account-profile div {
+  padding: 12px;
+  border: 1px solid #dbe5f2;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.account-signout {
+  margin-top: 14px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #1468d9;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (max-width: 800px) {
+  .account-row,
+  .account-profile {
+    grid-template-columns: 1fr;
+  }
+}
