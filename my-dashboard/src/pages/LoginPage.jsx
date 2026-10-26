@@ -435,7 +435,6 @@ function makeCaptchaCode() {
 
 function drawCaptcha(canvas, code) {
   if (!canvas) return;
-  canvas.__captcha = code;
   const context = canvas.getContext("2d");
   const width = canvas.width;
   const height = canvas.height;
