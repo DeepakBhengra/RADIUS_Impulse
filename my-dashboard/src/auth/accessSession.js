@@ -121,6 +121,14 @@ export function registerProductionUser(user) {
   saveRegistry(next);
 }
 
+export function changeProductionPassword(email, password) {
+  const user = findRegisteredUser(email);
+  if (!user) return null;
+  const updated = { ...user, password, temporary: false };
+  registerProductionUser(updated);
+  return updated;
+}
+
 export function readApprovals() {
   const stored = readStore(APPROVAL_KEY, []);
   return Array.isArray(stored) ? stored : [];

@@ -131,6 +131,38 @@
   color: #15803d;
 }
 
+.radius-captcha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.radius-captcha canvas {
+  width: 180px;
+  height: 52px;
+  border: 1px solid #dbe5f2;
+  border-radius: 10px;
+  background: #f8fbff;
+}
+
+.radius-captcha button {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dbe5f2;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1468d9;
+  cursor: pointer;
+}
+
+.radius-captcha button:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
 .radius-env {
   display: flex;
   flex-direction: column;

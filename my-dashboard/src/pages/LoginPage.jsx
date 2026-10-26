@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ChevronDown,
   Globe,
   Lock,
   Mail,
+  RefreshCw,
   Shield,
   Sparkles,
   UserRound,
@@ -14,7 +15,10 @@ import {
   COUNTRIES,
   DEMO_ACCOUNTS,
   PROD_ROLES,
+  changeProductionPassword,
   findRegisteredUser,
+  passwordIsValid,
+  passwordIssues,
   recordGuest,
   saveSession,
   submitApprovalRequest,
@@ -36,6 +40,7 @@ const PAGE_BACKGROUND = `
 
 export default function LoginPage() {
   const [view, setView] = useState("choose");
+  const [pendingUser, setPendingUser] = useState(null);
 
   function enter(nextSession) {
     saveSession(nextSession);
@@ -68,7 +73,27 @@ export default function LoginPage() {
                 onBack={() => setView("choose")}
                 onRegister={() => setView("prod-register")}
                 onGuest={() => setView("guest")}
-                onSignedIn={(user) =>
+                onSignedIn={(user) => {
+                  if (user.temporary) {
+                    setPendingUser(user);
+                    setView("change-password");
+                    return;
+                  }
+                  enter({
+                    mode: "production",
+                    email: user.email,
+                    name: user.name,
+                    country: user.country,
+                    role: user.role,
+                  });
+                }}
+              />
+            )}
+            {view === "change-password" && pendingUser && (
+              <ChangePassword
+                user={pendingUser}
+                onBack={() => setView("prod-signin")}
+                onChanged={(user) =>
                   enter({
                     mode: "production",
                     email: user.email,
@@ -264,7 +289,7 @@ function ProductionRegister({ onBack, onSignIn }) {
     >
       {result?.status === "created" && (
         <div className="radius-success">
-          Approval request sent for {email}. An admin can approve it from Approvals. The temporary password will show against this email.
+          Approval request for {email} is sent to Admin, Thank You
         </div>
       )}
       {result?.status === "pending" && (
@@ -310,13 +335,158 @@ function ProductionRegister({ onBack, onSignIn }) {
           Go to Sign In
         </button>
       )}
-      <p className="radius-note">
-        Example login ID: deepak.bhengra@ingram.com. The greeting uses Deepak Bhengra.
-      </p>
+      {result?.status !== "created" && (
+        <p className="radius-note">
+          Example login ID: deepak.bhengra@ingram.com. The greeting uses Deepak Bhengra.
+        </p>
+      )}
       <button className="radius-link" type="button" onClick={onBack}>
         Back to access options
       </button>
     </Panel>
+  );
+}
+
+function ChangePassword({ user, onBack, onChanged }) {
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [captchaInput, setCaptchaInput] = useState("");
+  const [captchaCode, setCaptchaCode] = useState("");
+  const [captchaVersion, setCaptchaVersion] = useState(0);
+  const [error, setError] = useState("");
+  const rules = passwordIssues(password);
+  const captchaMatches = captchaInput.trim().toUpperCase() === captchaCode;
+
+  function submit(event) {
+    event.preventDefault();
+    if (!passwordIsValid(password)) {
+      setError("Choose a password that meets every requirement.");
+      return;
+    }
+    if (password !== confirm) {
+      setError("Passwords do not match.");
+      return;
+    }
+    if (password === user.password) {
+      setError("Choose a password that is different from the temporary password.");
+      return;
+    }
+    if (!captchaMatches) {
+      setError("Captcha does not match. Please try again.");
+      setCaptchaInput("");
+      setCaptchaVersion((version) => version + 1);
+      return;
+    }
+    const updated = changeProductionPassword(user.email, password);
+    if (!updated) {
+      setError("This login could not be updated.");
+      return;
+    }
+    onChanged(updated);
+  }
+
+  return (
+    <Panel
+      icon={<Lock size={16} />}
+      title="Change password"
+      subtitle={`The temporary password for ${user.email} can be used once. Set a new password to open RADIUS.`}
+    >
+      <form onSubmit={submit} className="radius-form">
+        <Field label="New password" type="password" icon={<Lock size={15} />} value={password} onChange={setPassword} />
+        <Field label="Confirm password" type="password" icon={<Lock size={15} />} value={confirm} onChange={setConfirm} />
+        <ul className="radius-rules">
+          <li className={rules.length ? "ok" : ""}>At least 8 characters</li>
+          <li className={rules.upper ? "ok" : ""}>One uppercase letter</li>
+          <li className={rules.lower ? "ok" : ""}>One lowercase letter</li>
+          <li className={rules.number ? "ok" : ""}>One number</li>
+          <li className={rules.special ? "ok" : ""}>One special character</li>
+        </ul>
+        <Captcha key={captchaVersion} code={captchaCode} onCode={setCaptchaCode} />
+        <Field
+          label="Captcha"
+          type="text"
+          icon={<Shield size={15} />}
+          value={captchaInput}
+          onChange={setCaptchaInput}
+          placeholder="Type the characters"
+        />
+        {error && <div className="radius-error">{error}</div>}
+        <button
+          className="dashboard-search-button"
+          type="submit"
+          disabled={!password || !confirm || !captchaInput.trim()}
+        >
+          Save password
+        </button>
+      </form>
+      <button className="radius-link" type="button" onClick={onBack}>
+        Back to production sign in
+      </button>
+    </Panel>
+  );
+}
+
+function makeCaptchaCode() {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = new Uint32Array(5);
+  crypto.getRandomValues(bytes);
+  return [...bytes].map((value) => alphabet[value % alphabet.length]).join("");
+}
+
+function drawCaptcha(canvas, code) {
+  if (!canvas) return;
+  canvas.__captcha = code;
+  const context = canvas.getContext("2d");
+  const width = canvas.width;
+  const height = canvas.height;
+  context.clearRect(0, 0, width, height);
+  context.fillStyle = "#f8fbff";
+  context.fillRect(0, 0, width, height);
+  for (let line = 0; line < 6; line += 1) {
+    context.strokeStyle = line % 2 ? "#bfdbfe" : "#dbe5f2";
+    context.beginPath();
+    context.moveTo(Math.random() * width, Math.random() * height);
+    context.lineTo(Math.random() * width, Math.random() * height);
+    context.stroke();
+  }
+  context.textBaseline = "middle";
+  context.font = "700 24px Inter, sans-serif";
+  [...code].forEach((character, index) => {
+    context.save();
+    context.translate(22 + index * 28, height / 2);
+    context.rotate((Math.random() - 0.5) * 0.5);
+    context.fillStyle = index % 2 ? "#1468d9" : "#1e3a5f";
+    context.fillText(character, 0, 0);
+    context.restore();
+  });
+}
+
+function Captcha({ code, onCode }) {
+  const canvasRef = useRef(null);
+
+  function refresh() {
+    const next = makeCaptchaCode();
+    onCode(next);
+    drawCaptcha(canvasRef.current, next);
+  }
+
+  useEffect(() => {
+    refresh();
+    // Draw a fresh captcha when this step opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (code) drawCaptcha(canvasRef.current, code);
+  }, [code]);
+
+  return (
+    <div className="radius-captcha">
+      <canvas ref={canvasRef} width="180" height="52" aria-label="Captcha image" />
+      <button type="button" onClick={refresh} aria-label="Refresh captcha">
+        <RefreshCw size={14} />
+      </button>
+    </div>
   );
 }
 
