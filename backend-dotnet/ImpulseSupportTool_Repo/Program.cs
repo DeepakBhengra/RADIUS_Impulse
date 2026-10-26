@@ -1,5 +1,6 @@
 ﻿using ImpulseSupportTool_Repo;
 using OrderManagement.API.Repositories;
+using ImpulseSupportTool_Repo.Access;
 using ImpulseSupportTool_Repo.Analytics;
 using Microsoft.Extensions.Options;
 
@@ -55,6 +56,18 @@ builder.Services.AddSingleton<AnalyticsQueue>();
 
 // Single background service consumes queued events and writes JSONL files.
 builder.Services.AddHostedService<AnalyticsLogWriter>();
+
+builder.Services.Configure<AccessLogOptions>(
+    builder.Configuration.GetSection("AccessLog"));
+builder.Services.AddSingleton(sp =>
+{
+    var environment = sp.GetRequiredService<IWebHostEnvironment>();
+    var options = sp.GetRequiredService<IOptions<AccessLogOptions>>().Value;
+    var path = Path.IsPathRooted(options.LogFile)
+        ? options.LogFile
+        : Path.Combine(environment.ContentRootPath, options.LogFile);
+    return new UserAccessLog(path);
+});
 
 // --------------------------------------------------
 // Existing CORS policy

@@ -65,6 +65,7 @@ export default function AccountSpace() {
 
 function AdminApprovals() {
   const [requests, setRequests] = useState(() => readApprovals());
+  const [error, setError] = useState("");
   const pending = requests.filter((request) => request.status === "pending");
   const approved = requests.filter((request) => request.status === "approved");
   const name = displayName(readSession());
@@ -88,15 +89,23 @@ function AdminApprovals() {
           </div>
         </div>
 
+        {error && <p className="account-error">{error}</p>}
+
         <div className="account-toolbar">
           <span>{pendingApprovalCount()} pending</span>
           <button
             className="dashboard-search-button account-approve-all"
             type="button"
             disabled={pending.length === 0}
-            onClick={() => {
-              approveAllPending();
-              refresh();
+            onClick={async () => {
+              try {
+                setError("");
+                await approveAllPending();
+                refresh();
+              } catch (approveError) {
+                refresh();
+                setError(approveError.message || "The access log could not be reached.");
+              }
             }}
           >
             Approve all
@@ -111,9 +120,14 @@ function AdminApprovals() {
           <RequestTable
             title="Pending"
             requests={pending}
-            onApprove={(id) => {
-              approveRequest(id);
-              refresh();
+            onApprove={async (id) => {
+              try {
+                setError("");
+                await approveRequest(id);
+                refresh();
+              } catch (approveError) {
+                setError(approveError.message || "The access log could not be reached.");
+              }
             }}
           />
         )}

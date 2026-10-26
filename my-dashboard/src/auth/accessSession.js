@@ -1,3 +1,7 @@
+import { loginAccessUser, recordAccessUser } from "../services/accessApi";
+
+export { findAccessUser } from "../services/accessApi";
+
 const SESSION_KEY = "radius_access_session";
 const REGISTRY_KEY = "radius_registered_users";
 const APPROVAL_KEY = "radius_approval_requests";
@@ -121,9 +125,40 @@ export function registerProductionUser(user) {
   saveRegistry(next);
 }
 
-export function changeProductionPassword(email, password) {
-  const user = findRegisteredUser(email);
-  if (!user) return null;
+function demoProductionUser() {
+  return {
+    ...DEMO_PRODUCTION_USER,
+    name: nameFromEmail(DEMO_PRODUCTION_USER.email),
+  };
+}
+
+export async function loginProductionUser(email, password) {
+  const normalized = email.trim().toLowerCase();
+  const demoMatch =
+    normalized === DEMO_ACCOUNTS.production.email &&
+    password === DEMO_ACCOUNTS.production.password;
+
+  try {
+    const result = await loginAccessUser(normalized, password);
+    if (result.user) return result.user;
+    if (result.status === 404 && demoMatch) return demoProductionUser();
+    return null;
+  } catch (error) {
+    if (demoMatch) return demoProductionUser();
+    throw error;
+  }
+}
+
+export async function changeProductionPassword(user, password) {
+  await recordAccessUser({
+    event: "password_changed",
+    email: user.email,
+    name: user.name,
+    country: user.country,
+    role: user.role,
+    password,
+    temporary: false,
+  });
   const updated = { ...user, password, temporary: false };
   registerProductionUser(updated);
   return updated;
@@ -177,11 +212,20 @@ function temporaryPassword() {
   return `Tmp${pick(digits, 0)}${pick(alphabet, 1)}${pick(alphabet, 2)}${pick(alphabet, 3)}#${pick(alphabet, 4)}${pick(alphabet, 5)}${pick(alphabet, 6)}${pick(alphabet, 7)}`;
 }
 
-export function approveRequest(id) {
+export async function approveRequest(id) {
   const current = readApprovals().find((request) => request.id === id);
   if (!current || current.status !== "pending") return current || null;
 
   const password = temporaryPassword();
+  await recordAccessUser({
+    event: "approved",
+    email: current.email,
+    name: current.name,
+    country: current.country,
+    role: current.role,
+    password,
+    temporary: true,
+  });
   registerProductionUser({
     email: current.email,
     name: current.name,
@@ -203,9 +247,11 @@ export function approveRequest(id) {
   return approved;
 }
 
-export function approveAllPending() {
+export async function approveAllPending() {
   const pending = readApprovals().filter((request) => request.status === "pending");
-  pending.forEach((request) => approveRequest(request.id));
+  for (const request of pending) {
+    await approveRequest(request.id);
+  }
   return readApprovals();
 }
 

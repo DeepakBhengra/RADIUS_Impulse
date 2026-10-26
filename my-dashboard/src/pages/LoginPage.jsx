@@ -16,7 +16,8 @@ import {
   DEMO_ACCOUNTS,
   PROD_ROLES,
   changeProductionPassword,
-  findRegisteredUser,
+  findAccessUser,
+  loginProductionUser,
   passwordIsValid,
   passwordIssues,
   recordGuest,
@@ -232,14 +233,19 @@ function ProductionSignIn({ onBack, onRegister, onGuest, onSignedIn, initialEmai
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  function submit(event) {
+  async function submit(event) {
     event.preventDefault();
-    const user = findRegisteredUser(email);
-    if (!user || user.password !== password) {
-      setError("Production email or password was not recognized.");
-      return;
+    setError("");
+    try {
+      const user = await loginProductionUser(email, password);
+      if (!user) {
+        setError("Production email or password was not recognized.");
+        return;
+      }
+      onSignedIn(user);
+    } catch (loginError) {
+      setError(loginError.message || "The access log could not be reached.");
     }
-    onSignedIn(user);
   }
 
   return (
@@ -283,9 +289,18 @@ function ProductionRegister({ onBack, onSignIn }) {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
-  function submit(event) {
+  async function submit(event) {
     event.preventDefault();
     if (!profileReady) return;
+    try {
+      const existing = await findAccessUser(email);
+      if (existing) {
+        setResult({ status: existing.temporary ? "approved" : "registered" });
+        return;
+      }
+    } catch {
+      // A request can still be saved locally when the access log is offline.
+    }
     setResult(submitApprovalRequest({ email, country: form.country, role: form.role.trim() }));
   }
 
@@ -365,7 +380,7 @@ function ChangePassword({ user, onBack, onChanged }) {
   const rules = passwordIssues(password);
   const captchaMatches = captchaInput.trim().toUpperCase() === captchaCode;
 
-  function submit(event) {
+  async function submit(event) {
     event.preventDefault();
     if (!passwordIsValid(password)) {
       setError("Choose a password that meets every requirement.");
@@ -385,12 +400,12 @@ function ChangePassword({ user, onBack, onChanged }) {
       setCaptchaVersion((version) => version + 1);
       return;
     }
-    const updated = changeProductionPassword(user.email, password);
-    if (!updated) {
-      setError("This login could not be updated.");
-      return;
+    try {
+      const updated = await changeProductionPassword(user, password);
+      onChanged(updated);
+    } catch (changeError) {
+      setError(changeError.message || "The access log could not be reached.");
     }
-    onChanged(updated);
   }
 
   return (
