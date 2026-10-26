@@ -136,6 +136,83 @@
   background: #0f5fc9;
 }
 
+.account-decide {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.account-note-field {
+  flex: 1 1 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.account-note-field textarea {
+  min-height: 68px;
+  resize: vertical;
+  padding: 8px 10px;
+  border: 1px solid #dbe5f2;
+  border-radius: 10px;
+  color: #1e3a5f;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.account-note-field textarea:focus {
+  outline: none;
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
+}
+
+.account-decide-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.account-decline {
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid #fecaca;
+  border-radius: 18px;
+  background: #ffffff;
+  color: #b91c1c;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.account-decline:hover {
+  background: #fef2f2;
+}
+
+.account-inline-error {
+  flex-basis: 100%;
+  margin: 0;
+  color: #b91c1c;
+  font-size: 12px;
+}
+
+.account-row-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #7f1d1d;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .account-profile {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { displayName, environmentChoices, readSession } from "../../auth/accessSession";
 
 import {
@@ -510,8 +511,39 @@ function EnvironmentDropdown({
   options,
 }) {
   const [open, setOpen] = useState(false);
+  const [lockPop, setLockPop] = useState(null);
 
   const dropdownRef = useRef(null);
+
+  function hideLockPop() {
+    setLockPop(null);
+  }
+
+  function showLockPop(environment, element) {
+    if (!environment.hint) {
+      setLockPop(null);
+      return;
+    }
+    const menu = element.closest(".dashboard-country-menu") || element;
+    const rect = menu.getBoundingClientRect();
+    const width = Math.max(rect.width, 280);
+    const margin = 12;
+    let left = rect.left;
+    if (left + width > window.innerWidth - margin) {
+      left = Math.max(margin, window.innerWidth - width - margin);
+    }
+    const estimatedHeight = 108;
+    let top = rect.bottom + 8;
+    if (top + estimatedHeight > window.innerHeight - margin) {
+      top = Math.max(margin, rect.top - estimatedHeight - 8);
+    }
+    setLockPop({
+      text: environment.hint,
+      top,
+      left,
+      width,
+    });
+  }
 
   useEffect(() => {
     const handleOutsideClick = (event) => {
@@ -537,6 +569,10 @@ function EnvironmentDropdown({
       );
     };
   }, []);
+
+  useEffect(() => {
+    if (!open) setLockPop(null);
+  }, [open]);
 
   useEffect(() => {
     const handleEscape = (event) => {
@@ -628,6 +664,7 @@ function EnvironmentDropdown({
             {options.map((environment) => {
               const isSelected =
                 environment.id === value;
+              const showHint = Boolean(environment.disabled && environment.hint);
 
               return (
                 <button
@@ -636,15 +673,27 @@ function EnvironmentDropdown({
                   role="option"
                   aria-selected={isSelected}
                   aria-disabled={environment.disabled}
-                  disabled={environment.disabled}
+                  disabled={environment.disabled && !showHint}
                   className={`dashboard-country-option ${
                     isSelected
                       ? "is-selected"
                       : ""
                   } ${environment.disabled ? "is-disabled" : ""}`}
-                  onClick={() =>
-                    handleSelect(environment)
+                  onMouseEnter={(event) =>
+                    showLockPop(environment, event.currentTarget)
                   }
+                  onMouseLeave={hideLockPop}
+                  onFocus={(event) =>
+                    showLockPop(environment, event.currentTarget)
+                  }
+                  onBlur={hideLockPop}
+                  onClick={(event) => {
+                    if (showHint) {
+                      showLockPop(environment, event.currentTarget);
+                      return;
+                    }
+                    handleSelect(environment);
+                  }}
                 >
                   <span className="dashboard-country-option-code">
                     ENV
@@ -666,6 +715,22 @@ function EnvironmentDropdown({
           </div>
         </div>
       )}
+      {lockPop &&
+        createPortal(
+          <div
+            className="env-lock-pop"
+            role="tooltip"
+            style={{
+              top: lockPop.top,
+              left: lockPop.left,
+              width: lockPop.width,
+            }}
+          >
+            <strong>Production registration</strong>
+            <p>{lockPop.text}</p>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
@@ -748,8 +813,12 @@ export default function DashboardSearch({
 
     setCountryCode(item.countryCode);
 
-    const itemEnvironment =
+    const requested =
       item.environment || DEFAULT_ENVIRONMENT;
+    const allowed = environmentChoices(readSession()).some(
+      (choice) => choice.id === requested && !choice.disabled,
+    );
+    const itemEnvironment = allowed ? requested : environment;
 
     setEnvironment(itemEnvironment);
 

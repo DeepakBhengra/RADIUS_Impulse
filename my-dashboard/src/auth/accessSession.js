@@ -38,6 +38,17 @@ export const PROD_ROLES = [
   "Developer",
 ];
 
+export const COMPANY_EMAIL_DOMAIN = "ingrammicro.com";
+export const COMPANY_EMAIL_ERROR = "Only an @ingrammicro.com email ID can be used.";
+export const GUEST_PROD_HINT =
+  "Prod is locked for guest access. Register for production to request a production user ID.";
+
+export function isCompanyEmail(email) {
+  const normalized = String(email || "").trim().toLowerCase();
+  const at = normalized.indexOf("@");
+  return at > 0 && normalized.slice(at + 1) === COMPANY_EMAIL_DOMAIN && !normalized.slice(0, at).includes("@");
+}
+
 const DEMO_PRODUCTION_USER = {
   email: DEMO_ACCOUNTS.production.email,
   country: "MD",
@@ -134,6 +145,19 @@ function demoProductionUser() {
 
 export async function loginProductionUser(email, password) {
   const normalized = email.trim().toLowerCase();
+  if (!isCompanyEmail(normalized)) {
+    throw new Error(COMPANY_EMAIL_ERROR);
+  }
+  const declined = readApprovals().find(
+    (request) => request.email === normalized && request.status === "declined",
+  );
+  if (declined) {
+    throw new Error(
+      declined.note
+        ? `This request was declined. ${declined.note}`
+        : "This request was declined.",
+    );
+  }
   const demoMatch =
     normalized === DEMO_ACCOUNTS.production.email &&
     password === DEMO_ACCOUNTS.production.password;
@@ -177,8 +201,9 @@ export function pendingApprovalCount() {
   return readApprovals().filter((request) => request.status === "pending").length;
 }
 
-export function submitApprovalRequest({ email, country, role }) {
+export function submitApprovalRequest({ email, country, role, replaceDeclined = false }) {
   const normalized = email.trim().toLowerCase();
+  if (!isCompanyEmail(normalized)) return { status: "invalid-email" };
   if (findRegisteredUser(normalized)) {
     return { status: "registered" };
   }
@@ -187,6 +212,9 @@ export function submitApprovalRequest({ email, country, role }) {
   const existing = requests.find((request) => request.email === normalized);
   if (existing?.status === "pending") return { status: "pending", request: existing };
   if (existing?.status === "approved") return { status: "approved", request: existing };
+  if (existing?.status === "declined" && !replaceDeclined) {
+    return { status: "declined", request: existing };
+  }
 
   const request = {
     id: crypto.randomUUID(),
@@ -197,6 +225,8 @@ export function submitApprovalRequest({ email, country, role }) {
     status: "pending",
     requestedAt: new Date().toISOString(),
     approvedAt: "",
+    declinedAt: "",
+    note: "",
     temporaryPassword: "",
   };
   saveApprovals([request, ...requests.filter((item) => item.email !== normalized)]);
@@ -255,10 +285,34 @@ export async function approveAllPending() {
   return readApprovals();
 }
 
+export function declineRequest(id, note) {
+  const trimmed = String(note || "").trim();
+  if (!trimmed) {
+    throw new Error("Add a note before declining this request.");
+  }
+  const current = readApprovals().find((request) => request.id === id);
+  if (!current || current.status !== "pending") return current || null;
+
+  const declined = {
+    ...current,
+    status: "declined",
+    note: trimmed,
+    declinedAt: new Date().toISOString(),
+  };
+  saveApprovals(
+    readApprovals().map((request) => (request.id === id ? declined : request)),
+  );
+  return declined;
+}
+
 export function recordGuest({ name, email, country, role }) {
+  const normalized = email.trim().toLowerCase();
+  if (!isCompanyEmail(normalized)) {
+    throw new Error(COMPANY_EMAIL_ERROR);
+  }
   const entry = {
     name: titleName(name),
-    email: email.trim().toLowerCase(),
+    email: normalized,
     country,
     role,
     signedInAt: new Date().toISOString(),
@@ -296,7 +350,12 @@ export function environmentChoices(session) {
     session?.mode === "production" || session?.mode === "admin";
 
   return [
-    { id: "Prod", label: "Prod", disabled: !productionEnabled },
+    {
+      id: "Prod",
+      label: "Prod",
+      disabled: !productionEnabled,
+      hint: session?.mode === "guest" ? GUEST_PROD_HINT : "",
+    },
     { id: "Qa", label: "Qa", disabled: false },
     { id: "Dev", label: "Dev", disabled: false },
   ];

@@ -12,11 +12,13 @@ import {
 import Header from "../components/layout/Header";
 import radiusWatermark from "../assets/RADIUS_Watermark.png";
 import {
+  COMPANY_EMAIL_ERROR,
   COUNTRIES,
   DEMO_ACCOUNTS,
   PROD_ROLES,
   changeProductionPassword,
   findAccessUser,
+  isCompanyEmail,
   loginProductionUser,
   passwordIsValid,
   passwordIssues,
@@ -196,6 +198,10 @@ function AdminSignIn({ onBack, onSignedIn }) {
 
   function submit(event) {
     event.preventDefault();
+    if (!isCompanyEmail(email)) {
+      setError(COMPANY_EMAIL_ERROR);
+      return;
+    }
     const matches =
       email.trim().toLowerCase() === DEMO_ACCOUNTS.admin.email &&
       password === DEMO_ACCOUNTS.admin.password;
@@ -236,6 +242,10 @@ function ProductionSignIn({ onBack, onRegister, onGuest, onSignedIn, initialEmai
   async function submit(event) {
     event.preventDefault();
     setError("");
+    if (!isCompanyEmail(email)) {
+      setError(COMPANY_EMAIL_ERROR);
+      return;
+    }
     try {
       const user = await loginProductionUser(email, password);
       if (!user) {
@@ -292,6 +302,10 @@ function ProductionRegister({ onBack, onSignIn }) {
   async function submit(event) {
     event.preventDefault();
     if (!profileReady) return;
+    if (!isCompanyEmail(email)) {
+      setResult({ status: "invalid-email" });
+      return;
+    }
     try {
       const existing = await findAccessUser(email);
       if (existing) {
@@ -323,6 +337,15 @@ function ProductionRegister({ onBack, onSignIn }) {
       {(result?.status === "registered" || result?.status === "approved") && (
         <div className="radius-error">
           {email} already has production access. Sign in with the password issued for this login ID.
+        </div>
+      )}
+      {result?.status === "invalid-email" && (
+        <div className="radius-error">{COMPANY_EMAIL_ERROR}</div>
+      )}
+      {result?.status === "declined" && (
+        <div className="radius-error">
+          The request for {email} was declined.
+          {result.request?.note ? ` Note: ${result.request.note}` : ""}
         </div>
       )}
 
@@ -358,9 +381,27 @@ function ProductionRegister({ onBack, onSignIn }) {
           Go to Sign In
         </button>
       )}
+      {result?.status === "declined" && (
+        <button
+          className="dashboard-search-button"
+          type="button"
+          onClick={() =>
+            setResult(
+              submitApprovalRequest({
+                email,
+                country: form.country,
+                role: form.role.trim(),
+                replaceDeclined: true,
+              }),
+            )
+          }
+        >
+          Send a new request
+        </button>
+      )}
       {result?.status !== "created" && (
         <p className="radius-note">
-          Example login ID: deepak.bhengra@ingram.com. The greeting uses Deepak Bhengra.
+          Use an @ingrammicro.com email ID, for example deepak.bhengra@ingrammicro.com.
         </p>
       )}
       <button className="radius-link" type="button" onClick={onBack}>
@@ -517,11 +558,17 @@ function GuestSignIn({ onBack, onContinue }) {
   const [email, setEmail] = useState("");
   const [country, setCountry] = useState("");
   const [role, setRole] = useState("");
+  const [error, setError] = useState("");
   const ready = name.trim() && email.includes("@") && country && role.trim();
 
   function submit(event) {
     event.preventDefault();
     if (!ready) return;
+    if (!isCompanyEmail(email)) {
+      setError(COMPANY_EMAIL_ERROR);
+      return;
+    }
+    setError("");
     onContinue({
       name: name.trim(),
       email: email.trim().toLowerCase(),
@@ -551,10 +598,12 @@ function GuestSignIn({ onBack, onContinue }) {
           }))}
         />
         <RoleField value={role} onChange={setRole} />
+        {error && <div className="radius-error">{error}</div>}
         <button className="dashboard-search-button" type="submit" disabled={!ready}>
           Continue as Guest
         </button>
       </form>
+      <p className="radius-note">Guest sign-in accepts only an @ingrammicro.com email ID.</p>
       <button className="radius-link" type="button" onClick={onBack}>
         Back to access options
       </button>

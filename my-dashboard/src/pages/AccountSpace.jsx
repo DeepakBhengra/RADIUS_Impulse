@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { ArrowLeft, Check, Copy, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Check, Copy, ShieldCheck, X } from "lucide-react";
 import {
   COUNTRIES,
   approveAllPending,
   approveRequest,
   clearSession,
+  declineRequest,
   displayName,
   pendingApprovalCount,
   readApprovals,
@@ -68,6 +69,7 @@ function AdminApprovals() {
   const [error, setError] = useState("");
   const pending = requests.filter((request) => request.status === "pending");
   const approved = requests.filter((request) => request.status === "approved");
+  const declined = requests.filter((request) => request.status === "declined");
   const name = displayName(readSession());
 
   function refresh() {
@@ -84,7 +86,7 @@ function AdminApprovals() {
           <div>
             <h2>Good day, {name}</h2>
             <p>
-              Production approval requests are listed here. Approving a request creates a temporary password for that login ID.
+              Approving a request creates a temporary password for that login ID. Declining a request keeps a note with the decision.
             </p>
           </div>
         </div>
@@ -112,7 +114,7 @@ function AdminApprovals() {
           </button>
         </div>
 
-        {pending.length === 0 && approved.length === 0 && (
+        {pending.length === 0 && approved.length === 0 && declined.length === 0 && (
           <p className="account-empty">No approval requests yet. A production registration will appear here.</p>
         )}
 
@@ -129,10 +131,22 @@ function AdminApprovals() {
                 setError(approveError.message || "The access log could not be reached.");
               }
             }}
+            onDecline={(id, note) => {
+              try {
+                setError("");
+                declineRequest(id, note);
+                refresh();
+              } catch (declineError) {
+                setError(declineError.message || "This request could not be declined.");
+              }
+            }}
           />
         )}
 
         {approved.length > 0 && <RequestTable title="Approved" requests={approved} />}
+        {declined.length > 0 && (
+          <RequestTable title="Declined" requests={declined} dateLabel="Decline date" dateKey="declinedAt" />
+        )}
       </section>
       <div className="account-actions">
         <button className="account-back" type="button" onClick={backToRadius}>
@@ -146,7 +160,7 @@ function AdminApprovals() {
   );
 }
 
-function RequestTable({ title, requests, onApprove }) {
+function RequestTable({ title, requests, onApprove, onDecline, dateLabel = "Approval date", dateKey = "approvedAt" }) {
   return (
     <div className="account-block">
       <h3>{title}</h3>
@@ -170,8 +184,8 @@ function RequestTable({ title, requests, onApprove }) {
               <strong>{formatWhen(request.requestedAt)}</strong>
             </div>
             <div>
-              <span>Approval date</span>
-              <strong>{formatWhen(request.approvedAt)}</strong>
+              <span>{dateLabel}</span>
+              <strong>{formatWhen(request[dateKey])}</strong>
             </div>
             <div>
               <span>Temporary password</span>
@@ -181,14 +195,56 @@ function RequestTable({ title, requests, onApprove }) {
                 <strong>—</strong>
               )}
             </div>
+            {request.note && <p className="account-row-note">Note: {request.note}</p>}
             {onApprove && (
-              <button type="button" className="account-approve" onClick={() => onApprove(request.id)}>
-                <Check size={14} /> Approve
-              </button>
+              <DecisionActions
+                onApprove={() => onApprove(request.id)}
+                onDecline={(note) => onDecline(request.id, note)}
+              />
             )}
           </article>
         ))}
       </div>
+    </div>
+  );
+}
+
+function DecisionActions({ onApprove, onDecline }) {
+  const [note, setNote] = useState("");
+  const [error, setError] = useState("");
+
+  return (
+    <div className="account-decide">
+      <label className="account-note-field">
+        Decline note
+        <textarea
+          value={note}
+          placeholder="Why this request is declined"
+          onChange={(event) => {
+            setNote(event.target.value);
+            setError("");
+          }}
+        />
+      </label>
+      <div className="account-decide-buttons">
+        <button type="button" className="account-approve" onClick={onApprove}>
+          <Check size={14} /> Approve
+        </button>
+        <button
+          type="button"
+          className="account-decline"
+          onClick={() => {
+            if (!note.trim()) {
+              setError("Add a note before declining this request.");
+              return;
+            }
+            onDecline(note.trim());
+          }}
+        >
+          <X size={14} /> Decline
+        </button>
+      </div>
+      {error && <p className="account-inline-error">{error}</p>}
     </div>
   );
 }

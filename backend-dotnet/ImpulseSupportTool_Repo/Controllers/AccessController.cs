@@ -65,7 +65,12 @@ public sealed class AccessController : ControllerBase
         [FromBody] AccessLoginRequest request,
         CancellationToken cancellationToken)
     {
-        if (!IsEmail(request.Email) || string.IsNullOrEmpty(request.Password))
+        if (!IsCompanyEmail(request.Email))
+        {
+            return BadRequest(new { message = "Only an @ingrammicro.com email ID can be used." });
+        }
+
+        if (string.IsNullOrEmpty(request.Password))
         {
             return BadRequest(new { message = "Email and password are required." });
         }
@@ -91,9 +96,9 @@ public sealed class AccessController : ControllerBase
             return "Event must be approved or password_changed.";
         }
 
-        if (!IsEmail(request.Email))
+        if (!IsCompanyEmail(request.Email))
         {
-            return "A valid email is required.";
+            return "Only an @ingrammicro.com email ID can be used.";
         }
 
         if (string.IsNullOrEmpty(request.Password))
@@ -106,7 +111,24 @@ public sealed class AccessController : ControllerBase
 
     private static bool IsEmail(string? email)
     {
-        return !string.IsNullOrWhiteSpace(email) && email.Contains('@');
+        return IsCompanyEmail(email);
+    }
+
+    private static bool IsCompanyEmail(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return false;
+        }
+
+        var trimmed = email.Trim();
+        var at = trimmed.IndexOf('@');
+        if (at <= 0 || at != trimmed.LastIndexOf('@'))
+        {
+            return false;
+        }
+
+        return trimmed[(at + 1)..].Equals("ingrammicro.com", StringComparison.OrdinalIgnoreCase);
     }
 
     private static object ToProfile(UserAccessRecord record)
