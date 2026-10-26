@@ -6,7 +6,7 @@ const GUEST_LOG_KEY = "radius_guest_log";
 export const DEMO_ACCOUNTS = {
   admin: {
     email: "admin@ingrammicro.com",
-    password: "RadiusAdmin#1",
+    password: "admin1234",
   },
   production: {
     email: "prod.user@ingrammicro.com",
