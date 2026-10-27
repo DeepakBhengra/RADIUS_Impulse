@@ -1,23 +1,18 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, Check, Copy, ShieldCheck, X } from "lucide-react";
 import {
-  COUNTRIES,
   approveAllPending,
   approveRequest,
   clearSession,
   declineRequest,
   displayName,
+  formatCountries,
   loadApprovals,
   readGuestLog,
   readSession,
 } from "../auth/accessSession";
 import "../components/search/DashboardSearch.css";
 import "./AccountSpace.css";
-
-function countryLabel(code) {
-  const country = COUNTRIES.find((item) => item.code === code);
-  return country ? `${country.region} — ${country.code} — ${country.name}` : code || "—";
-}
 
 function formatWhen(iso) {
   if (!iso) return "—";
@@ -189,8 +184,8 @@ function RequestTable({ title, requests, onApprove, onDecline, dateLabel = "Appr
               <span>{request.name}</span>
             </div>
             <div>
-              <span>Country</span>
-              <strong>{countryLabel(request.country)}</strong>
+              <span>Countries</span>
+              <strong>{formatCountries(request.countries?.length ? request.countries : request.country)}</strong>
             </div>
             <div>
               <span>Role</span>
@@ -335,8 +330,12 @@ function PersonalProfile({ session }) {
             <dd>{session?.email || "—"}</dd>
           </div>
           <div>
-            <dt>Country</dt>
-            <dd>{countryLabel(guestRecord?.country || session?.country)}</dd>
+            <dt>{session?.mode === "production" ? "Countries" : "Country"}</dt>
+            <dd>
+              {session?.mode === "production"
+                ? formatCountries(session.countries?.length ? session.countries : session.country)
+                : formatCountries(guestRecord?.country || session?.country)}
+            </dd>
           </div>
           <div>
             <dt>Role</dt>

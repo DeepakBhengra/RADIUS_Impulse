@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { displayName, environmentChoices, readSession } from "../../auth/accessSession";
+import { countryAllowed, displayName, environmentChoices, readSession } from "../../auth/accessSession";
 
 import {
   Search,
@@ -220,6 +220,7 @@ function CountryDropdown({
   value,
   onChange,
   options,
+  lockedCodes = [],
 }) {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
@@ -301,6 +302,8 @@ function CountryDropdown({
      SELECTED COUNTRY
      ------------------------------------------------------- */
 
+  const locked = new Set(lockedCodes.map((code) => String(code).toUpperCase()));
+
   const selectedCountry = options.find(
     (country) => country === value
   );
@@ -338,6 +341,8 @@ function CountryDropdown({
      ------------------------------------------------------- */
 
   const handleSelect = (country) => {
+    if (locked.has(country)) return;
+
     onChange(country);
 
     setOpen(false);
@@ -467,6 +472,7 @@ function CountryDropdown({
                 (country) => {
                   const isSelected =
                     country === value;
+                  const isLocked = locked.has(country);
 
                   return (
                     <button
@@ -476,11 +482,13 @@ function CountryDropdown({
                       aria-selected={
                         isSelected
                       }
+                      aria-disabled={isLocked}
+                      disabled={isLocked}
                       className={`dashboard-country-option ${
                         isSelected
                           ? "is-selected"
                           : ""
-                      }`}
+                      } ${isLocked ? "is-disabled" : ""}`}
                       onClick={() =>
                         handleSelect(country)
                       }
@@ -499,6 +507,7 @@ function CountryDropdown({
                         {getCountryName(
                           country
                         )}
+                        {isLocked ? " (locked)" : ""}
                       </span>
 
 
@@ -806,9 +815,15 @@ export default function DashboardSearch({
      VALIDATION
      ======================================================= */
 
+  const session = readSession();
+  const lockedCodes = environment === "Prod"
+    ? COUNTRY_CODES.filter((code) => !countryAllowed(session, environment, code))
+    : [];
+
   const canSearch =
     poNumber.trim().length > 0 &&
     countryCode.trim().length > 0 &&
+    countryAllowed(session, environment, countryCode) &&
     !loading;
 
 
@@ -851,16 +866,22 @@ export default function DashboardSearch({
   ) => {
     setPoNumber(item.poNumber);
 
-    setCountryCode(item.countryCode);
-
     const requested =
       item.environment || DEFAULT_ENVIRONMENT;
-    const allowed = environmentChoices(readSession()).some(
+    const currentSession = readSession();
+    const allowed = environmentChoices(currentSession).some(
       (choice) => choice.id === requested && !choice.disabled,
     );
     const itemEnvironment = allowed ? requested : environment;
 
     setEnvironment(itemEnvironment);
+
+    if (!countryAllowed(currentSession, itemEnvironment, item.countryCode)) {
+      setCountryCode("");
+      return;
+    }
+
+    setCountryCode(item.countryCode);
 
     if (onSearch) {
       await onSearch({
@@ -1014,6 +1035,7 @@ export default function DashboardSearch({
               value={countryCode}
               onChange={setCountryCode}
               options={COUNTRY_CODES}
+              lockedCodes={lockedCodes}
             />
 
           </div>
@@ -1031,8 +1053,13 @@ export default function DashboardSearch({
 
             <EnvironmentDropdown
               value={environment}
-              onChange={setEnvironment}
-              options={environmentChoices(readSession())}
+              onChange={(next) => {
+                setEnvironment(next);
+                if (!countryAllowed(readSession(), next, countryCode)) {
+                  setCountryCode("");
+                }
+              }}
+              options={environmentChoices(session)}
             />
 
           </div>

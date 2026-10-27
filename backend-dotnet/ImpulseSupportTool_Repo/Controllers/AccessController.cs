@@ -35,7 +35,7 @@ public sealed class AccessController : ControllerBase
             Event = request.Event.Trim(),
             Email = request.Email.Trim().ToLowerInvariant(),
             Name = request.Name?.Trim() ?? "",
-            Country = request.Country?.Trim() ?? "",
+            Country = NormalizeCountries(request.Countries, request.Country),
             Role = request.Role?.Trim() ?? "",
             Password = request.Password,
             Temporary = request.Temporary,
@@ -177,9 +177,10 @@ public sealed class AccessController : ControllerBase
             return BadRequest(new { message = "Only an @ingrammicro.com email ID can be used." });
         }
 
-        if (string.IsNullOrWhiteSpace(request.Country) || string.IsNullOrWhiteSpace(request.Role))
+        var countries = NormalizeCountries(request.Countries, request.Country);
+        if (countries.Length == 0 || string.IsNullOrWhiteSpace(request.Role))
         {
-            return BadRequest(new { message = "Country and role are required." });
+            return BadRequest(new { message = "Select at least one country and a role." });
         }
 
         var email = request.Email.Trim().ToLowerInvariant();
@@ -210,7 +211,7 @@ public sealed class AccessController : ControllerBase
             Id = Guid.NewGuid().ToString(),
             Email = email,
             Name = string.IsNullOrWhiteSpace(request.Name) ? NameFromEmail(email) : request.Name.Trim(),
-            Country = request.Country.Trim(),
+            Country = countries,
             Role = request.Role.Trim(),
             Status = "pending",
             RequestedAt = DateTimeOffset.UtcNow,
@@ -324,6 +325,7 @@ public sealed class AccessController : ControllerBase
             email = record.Email,
             name = record.Name,
             country = record.Country,
+            countries = SplitCountries(record.Country),
             role = record.Role,
             temporary = record.Temporary,
         };
@@ -345,6 +347,57 @@ public sealed class AccessController : ControllerBase
             ApprovedAt = current.ApprovedAt,
             DeclinedAt = current.DeclinedAt,
         };
+    }
+
+    private static string NormalizeCountries(IEnumerable<string>? countries, string? country)
+    {
+        var tokens = new List<string>();
+        if (countries is not null)
+        {
+            foreach (var item in countries)
+            {
+                if (!string.IsNullOrWhiteSpace(item))
+                {
+                    tokens.Add(item);
+                }
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(country))
+        {
+            tokens.Add(country);
+        }
+
+        var unique = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var token in tokens)
+        {
+            foreach (var part in token.Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                var code = part.Trim().ToUpperInvariant();
+                if (code.Length is < 2 or > 3 || !code.All(char.IsLetterOrDigit))
+                {
+                    continue;
+                }
+
+                if (seen.Add(code))
+                {
+                    unique.Add(code);
+                }
+            }
+        }
+
+        return string.Join(',', unique);
+    }
+
+    private static string[] SplitCountries(string? country)
+    {
+        if (string.IsNullOrWhiteSpace(country))
+        {
+            return [];
+        }
+
+        return country.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     }
 
     private static string NameFromEmail(string email)
@@ -376,6 +429,8 @@ public sealed class ApprovalSubmitRequest
 
     public string? Country { get; set; }
 
+    public List<string>? Countries { get; set; }
+
     public string? Role { get; set; }
 
     public bool ReplaceDeclined { get; set; }
@@ -406,6 +461,8 @@ public sealed class AccessUserRequest
     public string? Name { get; set; }
 
     public string? Country { get; set; }
+
+    public List<string>? Countries { get; set; }
 
     public string? Role { get; set; }
 

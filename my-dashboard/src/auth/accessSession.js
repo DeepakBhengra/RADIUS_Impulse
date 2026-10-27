@@ -99,10 +99,46 @@ export function isCompanyEmail(email) {
 const DEMO_PRODUCTION_USER = {
   email: DEMO_ACCOUNTS.production.email,
   country: "MD",
+  countries: ["MD"],
   role: "Support Analyst",
   password: DEMO_ACCOUNTS.production.password,
   temporary: false,
 };
+
+export function countryLabel(code) {
+  const normalized = String(code || "").trim().toUpperCase();
+  const country = COUNTRIES.find((item) => item.code === normalized);
+  if (country) return `${country.code} — ${country.name}`;
+  return normalized || "—";
+}
+
+export function orderCountries(value) {
+  const raw = Array.isArray(value) ? value : String(value || "").split(/[,;]/);
+  const wanted = new Set(
+    raw.map((item) => String(item || "").trim().toUpperCase()).filter(Boolean),
+  );
+  const ordered = COUNTRIES.map((item) => item.code).filter((code) => wanted.has(code));
+  for (const code of wanted) {
+    if (!ordered.includes(code)) ordered.push(code);
+  }
+  return ordered;
+}
+
+export function formatCountries(value) {
+  const codes = orderCountries(value);
+  if (!codes.length) return "—";
+  return codes.map((code) => countryLabel(code)).join(", ");
+}
+
+export function countryAllowed(session, environment, code) {
+  if (environment !== "Prod") return true;
+  if (session?.mode === "admin") return true;
+  if (session?.mode !== "production") return false;
+  const allowed = new Set(
+    orderCountries(session.countries?.length ? session.countries : session.country),
+  );
+  return allowed.has(String(code || "").trim().toUpperCase());
+}
 
 function readStore(key, fallback) {
   try {
@@ -211,16 +247,24 @@ export async function loginProductionUser(email, password) {
 }
 
 export async function changeProductionPassword(user, password) {
+  const countries = orderCountries(user.countries?.length ? user.countries : user.country);
   await recordAccessUser({
     event: "password_changed",
     email: user.email,
     name: user.name,
-    country: user.country,
+    country: countries.join(","),
+    countries,
     role: user.role,
     password,
     temporary: false,
   });
-  const updated = { ...user, password, temporary: false };
+  const updated = {
+    ...user,
+    country: countries.join(","),
+    countries,
+    password,
+    temporary: false,
+  };
   registerProductionUser(updated);
   return updated;
 }
@@ -267,13 +311,16 @@ export function usePendingApprovalCount(enabled) {
   return count;
 }
 
-export async function submitApprovalRequest({ email, country, role, replaceDeclined = false }) {
+export async function submitApprovalRequest({ email, country, countries, role, replaceDeclined = false }) {
   const normalized = email.trim().toLowerCase();
   if (!isCompanyEmail(normalized)) return { status: "invalid-email" };
+  const selected = orderCountries(countries?.length ? countries : country);
+  if (!selected.length) return { status: "invalid-country" };
   const result = await createApprovalRequest({
     email: normalized,
     name: nameFromEmail(normalized),
-    country,
+    country: selected.join(","),
+    countries: selected,
     role,
     replaceDeclined,
   });
@@ -284,10 +331,12 @@ export async function submitApprovalRequest({ email, country, role, replaceDecli
 export async function approveRequest(id) {
   const approved = await approveApprovalRequest(id);
   if (approved?.email) {
+    const countries = orderCountries(approved.countries?.length ? approved.countries : approved.country);
     registerProductionUser({
       email: approved.email,
       name: approved.name,
-      country: approved.country,
+      country: countries.join(","),
+      countries,
       role: approved.role,
       password: approved.temporaryPassword,
       temporary: true,

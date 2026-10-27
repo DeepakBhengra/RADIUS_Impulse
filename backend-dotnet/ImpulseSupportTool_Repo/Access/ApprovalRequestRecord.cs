@@ -10,6 +10,11 @@ public sealed class ApprovalRequestRecord
 
     public string Country { get; set; } = "";
 
+    public string[] Countries =>
+        string.IsNullOrWhiteSpace(Country)
+            ? []
+            : Country.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
     public string Role { get; set; } = "";
 
     public string Status { get; set; } = "pending";

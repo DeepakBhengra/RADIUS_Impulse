@@ -17,7 +17,9 @@ import {
   DEMO_ACCOUNTS,
   PROD_ROLES,
   changeProductionPassword,
+  countryLabel,
   isCompanyEmail,
+  orderCountries,
   loginProductionUser,
   passwordIsValid,
   passwordIssues,
@@ -30,9 +32,14 @@ import "./LoginPage.css";
 
 const EMPTY_REGISTER = {
   email: "",
-  country: "",
+  countries: [],
   role: "",
 };
+
+const COUNTRY_OPTIONS = COUNTRIES.map((country) => ({
+  value: country.code,
+  label: countryLabel(country.code),
+}));
 
 const PAGE_BACKGROUND = `
   radial-gradient(circle at 5% 20%, rgba(59, 130, 246, 0.07), transparent 25%),
@@ -91,11 +98,15 @@ export default function LoginPage() {
                     setView("change-password");
                     return;
                   }
+                  const countries = orderCountries(
+                    user.countries?.length ? user.countries : user.country,
+                  );
                   enter({
                     mode: "production",
                     email: user.email,
                     name: user.name,
-                    country: user.country,
+                    country: countries.join(","),
+                    countries,
                     role: user.role,
                   });
                 }}
@@ -287,7 +298,7 @@ function ProductionRegister({ onBack, onSignIn }) {
   const [form, setForm] = useState(EMPTY_REGISTER);
   const [result, setResult] = useState(null);
   const email = form.email.trim().toLowerCase();
-  const profileReady = email.includes("@") && form.country && form.role.trim();
+  const profileReady = email.includes("@") && form.countries.length > 0 && form.role.trim();
 
   function update(key, value) {
     setResult(null);
@@ -302,7 +313,7 @@ function ProductionRegister({ onBack, onSignIn }) {
       return;
     }
     try {
-      setResult(await submitApprovalRequest({ email, country: form.country, role: form.role.trim() }));
+      setResult(await submitApprovalRequest({ email, countries: form.countries, role: form.role.trim() }));
     } catch (requestError) {
       setResult({ status: "failed", message: requestError.message || "The access log could not be reached." });
     }
@@ -312,7 +323,7 @@ function ProductionRegister({ onBack, onSignIn }) {
     <Panel
       icon={<UserRound size={16} />}
       title="Production Register"
-      subtitle="Submit your email, country, and role. An admin approves the request and a temporary password is issued for this login ID."
+      subtitle="Submit your email, the countries this production access is for, and your role. An admin approves the request and a temporary password is issued for this login ID."
     >
       {result?.status === "created" && (
         <div className="radius-success">
@@ -331,6 +342,9 @@ function ProductionRegister({ onBack, onSignIn }) {
       )}
       {result?.status === "invalid-email" && (
         <div className="radius-error">{COMPANY_EMAIL_ERROR}</div>
+      )}
+      {result?.status === "invalid-country" && (
+        <div className="radius-error">Select at least one country for this production access request.</div>
       )}
       {result?.status === "declined" && (
         <div className="radius-error">
@@ -351,16 +365,9 @@ function ProductionRegister({ onBack, onSignIn }) {
             value={form.email}
             onChange={(value) => update("email", value)}
           />
-          <SelectField
-            label="Country"
-            icon={<Globe size={15} />}
-            value={form.country}
-            onChange={(value) => update("country", value)}
-            placeholder="Select country"
-            options={COUNTRIES.map((country) => ({
-              value: country.code,
-              label: `${country.region} — ${country.code} — ${country.name}`,
-            }))}
+          <CountryPicker
+            selected={form.countries}
+            onChange={(value) => update("countries", value)}
           />
           <RoleField value={form.role} onChange={(value) => update("role", value)} />
           <button className="dashboard-search-button" type="submit" disabled={!profileReady}>
@@ -382,7 +389,7 @@ function ProductionRegister({ onBack, onSignIn }) {
             try {
               setResult(await submitApprovalRequest({
                 email,
-                country: form.country,
+                countries: form.countries,
                 role: form.role.trim(),
                 replaceDeclined: true,
               }));
@@ -595,10 +602,7 @@ function GuestSignIn({ onBack, onContinue }) {
           value={country}
           onChange={setCountry}
           placeholder="Select country"
-          options={COUNTRIES.map((item) => ({
-            value: item.code,
-            label: `${item.region} — ${item.code} — ${item.name}`,
-          }))}
+          options={COUNTRY_OPTIONS}
         />
         <RoleField value={role} onChange={setRole} />
         {error && <div className="radius-error">{error}</div>}
@@ -611,6 +615,41 @@ function GuestSignIn({ onBack, onContinue }) {
         Back to access options
       </button>
     </Panel>
+  );
+}
+
+function CountryPicker({ selected, onChange }) {
+  const summary = selected.length
+    ? selected.map((code) => countryLabel(code)).join(", ")
+    : "Select one or more countries";
+
+  function toggle(code) {
+    const next = selected.includes(code)
+      ? selected.filter((item) => item !== code)
+      : [...selected, code];
+    const ordered = COUNTRIES.map((country) => country.code).filter((item) => next.includes(item));
+    onChange(ordered);
+  }
+
+  return (
+    <div className="dashboard-search-field">
+      <span>Countries</span>
+      <div className="radius-country-picker">
+        <p className={`radius-country-summary${selected.length ? "" : " is-empty"}`}>{summary}</p>
+        <div className="radius-country-list">
+          {COUNTRY_OPTIONS.map((country) => (
+            <label key={country.value}>
+              <input
+                type="checkbox"
+                checked={selected.includes(country.value)}
+                onChange={() => toggle(country.value)}
+              />
+              <span>{country.label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
