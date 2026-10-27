@@ -313,7 +313,7 @@ function CountryDropdown({
      FILTER OPTIONS
      ------------------------------------------------------- */
 
-  const filteredOptions = options.filter(
+  const matchedOptions = options.filter(
     (country) => {
       const code = country.toLowerCase();
 
@@ -334,6 +334,11 @@ function CountryDropdown({
       );
     }
   );
+
+  const filteredOptions = [
+    ...matchedOptions.filter((country) => !locked.has(country)),
+    ...matchedOptions.filter((country) => locked.has(country)),
+  ];
 
 
   /* -------------------------------------------------------
