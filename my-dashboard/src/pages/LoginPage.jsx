@@ -222,9 +222,6 @@ function AdminSignIn({ onBack, onSignedIn }) {
         {error && <div className="radius-error">{error}</div>}
         <button className="dashboard-search-button" type="submit">Sign In</button>
       </form>
-      <p className="radius-demo">
-        Sample admin: {DEMO_ACCOUNTS.admin.email} / {DEMO_ACCOUNTS.admin.password}
-      </p>
       <button className="radius-link" type="button" onClick={onBack}>
         Back to access options
       </button>
@@ -362,7 +359,7 @@ function ProductionRegister({ onBack, onSignIn }) {
             placeholder="Select country"
             options={COUNTRIES.map((country) => ({
               value: country.code,
-              label: `${country.code} — ${country.name}`,
+              label: `${country.region} — ${country.code} — ${country.name}`,
             }))}
           />
           <RoleField value={form.role} onChange={(value) => update("role", value)} />
@@ -600,7 +597,7 @@ function GuestSignIn({ onBack, onContinue }) {
           placeholder="Select country"
           options={COUNTRIES.map((item) => ({
             value: item.code,
-            label: `${item.code} — ${item.name}`,
+            label: `${item.region} — ${item.code} — ${item.name}`,
           }))}
         />
         <RoleField value={role} onChange={setRole} />

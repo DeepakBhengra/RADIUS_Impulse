@@ -16,7 +16,7 @@ import "./AccountSpace.css";
 
 function countryLabel(code) {
   const country = COUNTRIES.find((item) => item.code === code);
-  return country ? `${country.code} — ${country.name}` : code || "—";
+  return country ? `${country.region} — ${country.code} — ${country.name}` : code || "—";
 }
 
 function formatWhen(iso) {
