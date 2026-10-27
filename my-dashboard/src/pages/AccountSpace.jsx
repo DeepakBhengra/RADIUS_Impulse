@@ -292,10 +292,22 @@ function PasswordValue({ value }) {
 
 function PersonalProfile({ session }) {
   const name = displayName(session);
-  const guestRecord =
-    session?.mode === "guest"
-      ? readGuestLog().find((guest) => guest.email === session.email)
-      : null;
+  const [guestRecord, setGuestRecord] = useState(null);
+
+  useEffect(() => {
+    if (session?.mode !== "guest" || !session.email) return undefined;
+    let cancel = false;
+    readGuestLog(session.email)
+      .then((guest) => {
+        if (!cancel) setGuestRecord(guest);
+      })
+      .catch(() => {
+        if (!cancel) setGuestRecord(null);
+      });
+    return () => {
+      cancel = true;
+    };
+  }, [session?.mode, session?.email]);
 
   return (
     <div className="account-space">

@@ -10,11 +10,13 @@ public sealed class AccessController : ControllerBase
 {
     private readonly UserAccessLog _log;
     private readonly ApprovalLog _requests;
+    private readonly GuestLog _guests;
 
-    public AccessController(UserAccessLog log, ApprovalLog requests)
+    public AccessController(UserAccessLog log, ApprovalLog requests, GuestLog guests)
     {
         _log = log;
         _requests = requests;
+        _guests = guests;
     }
 
     [HttpPost("users")]
@@ -108,6 +110,54 @@ public sealed class AccessController : ControllerBase
         }
 
         return Ok(ToProfile(record));
+    }
+
+    [HttpPost("guests")]
+    public async Task<IActionResult> RecordGuest(
+        [FromBody] GuestLoginRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!IsCompanyEmail(request.Email))
+        {
+            return BadRequest(new { message = "Only an @ingrammicro.com email ID can be used." });
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Name) ||
+            string.IsNullOrWhiteSpace(request.Country) ||
+            string.IsNullOrWhiteSpace(request.Role))
+        {
+            return BadRequest(new { message = "Name, country, and role are required." });
+        }
+
+        var saved = await _guests.AddAsync(new GuestLoginRecord
+        {
+            Name = request.Name.Trim(),
+            Email = request.Email.Trim().ToLowerInvariant(),
+            Country = request.Country.Trim(),
+            Role = request.Role.Trim(),
+            SignedInAt = DateTimeOffset.UtcNow,
+        }, cancellationToken);
+
+        return StatusCode(StatusCodes.Status201Created, saved);
+    }
+
+    [HttpGet("guests")]
+    public async Task<IActionResult> FindGuest(
+        [FromQuery] string email,
+        CancellationToken cancellationToken)
+    {
+        if (!IsCompanyEmail(email))
+        {
+            return BadRequest(new { message = "Only an @ingrammicro.com email ID can be used." });
+        }
+
+        var guest = await _guests.LatestByEmailAsync(email, cancellationToken);
+        if (guest is null)
+        {
+            return NotFound(new { message = "Guest was not found." });
+        }
+
+        return Ok(guest);
     }
 
     [HttpGet("requests")]
@@ -334,6 +384,17 @@ public sealed class ApprovalSubmitRequest
 public sealed class ApprovalDeclineRequest
 {
     public string? Note { get; set; }
+}
+
+public sealed class GuestLoginRequest
+{
+    public string? Name { get; set; }
+
+    public string Email { get; set; } = "";
+
+    public string? Country { get; set; }
+
+    public string? Role { get; set; }
 }
 
 public sealed class AccessUserRequest

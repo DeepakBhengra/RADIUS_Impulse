@@ -63,22 +63,19 @@ builder.Services.AddSingleton(sp =>
 {
     var environment = sp.GetRequiredService<IWebHostEnvironment>();
     var options = sp.GetRequiredService<IOptions<AccessLogOptions>>().Value;
-    var path = Path.IsPathRooted(options.LogFile)
-        ? options.LogFile
-        : Path.Combine(environment.ContentRootPath, options.LogFile);
-    return new UserAccessLog(path);
+    return new UserAccessLog(ResolveAccessPath(environment, options.UsersDatabase, Path.Combine("logs", "radius-users.db")));
 });
 builder.Services.AddSingleton(sp =>
 {
     var environment = sp.GetRequiredService<IWebHostEnvironment>();
     var options = sp.GetRequiredService<IOptions<AccessLogOptions>>().Value;
-    var requestsFile = string.IsNullOrWhiteSpace(options.RequestsFile)
-        ? Path.Combine("logs", "radius-requests.log")
-        : options.RequestsFile;
-    var path = Path.IsPathRooted(requestsFile)
-        ? requestsFile
-        : Path.Combine(environment.ContentRootPath, requestsFile);
-    return new ApprovalLog(path);
+    return new ApprovalLog(ResolveAccessPath(environment, options.RequestsDatabase, Path.Combine("logs", "radius-requests.db")));
+});
+builder.Services.AddSingleton(sp =>
+{
+    var environment = sp.GetRequiredService<IWebHostEnvironment>();
+    var options = sp.GetRequiredService<IOptions<AccessLogOptions>>().Value;
+    return new GuestLog(ResolveAccessPath(environment, options.GuestsDatabase, Path.Combine("logs", "radius-guests.db")));
 });
 
 // --------------------------------------------------
@@ -149,3 +146,11 @@ app.MapGet("/debug/routes", (IEnumerable<EndpointDataSource> sources) =>
 );
 
 app.Run();
+
+static string ResolveAccessPath(IWebHostEnvironment environment, string? configured, string fallback)
+{
+    var relative = string.IsNullOrWhiteSpace(configured) ? fallback : configured;
+    return Path.IsPathRooted(relative)
+        ? relative
+        : Path.Combine(environment.ContentRootPath, relative);
+}

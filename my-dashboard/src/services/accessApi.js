@@ -93,3 +93,22 @@ export async function declineApprovalRequest(id, note) {
     throw toError(error, "The access log could not be reached.");
   }
 }
+
+export async function recordGuestLogin(guest) {
+  try {
+    const response = await client.post("/guests", guest);
+    return response.data;
+  } catch (error) {
+    throw toError(error, "The access log could not be reached.");
+  }
+}
+
+export async function findGuestLogin(email) {
+  try {
+    const response = await client.get("/guests", { params: { email } });
+    return response.data;
+  } catch (error) {
+    if (error.response?.status === 404) return null;
+    throw toError(error, "The access log could not be reached.");
+  }
+}

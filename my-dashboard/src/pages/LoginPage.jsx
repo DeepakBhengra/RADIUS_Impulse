@@ -117,7 +117,6 @@ export default function LoginPage() {
               <GuestSignIn
                 onBack={() => setView("choose")}
                 onContinue={(guest) => {
-                  recordGuest(guest);
                   enter({
                     mode: "guest",
                     name: guest.name,
@@ -563,7 +562,7 @@ function GuestSignIn({ onBack, onContinue }) {
   const [error, setError] = useState("");
   const ready = name.trim() && email.includes("@") && country && role.trim();
 
-  function submit(event) {
+  async function submit(event) {
     event.preventDefault();
     if (!ready) return;
     if (!isCompanyEmail(email)) {
@@ -571,12 +570,17 @@ function GuestSignIn({ onBack, onContinue }) {
       return;
     }
     setError("");
-    onContinue({
-      name: name.trim(),
-      email: email.trim().toLowerCase(),
-      country,
-      role: role.trim(),
-    });
+    try {
+      const saved = await recordGuest({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        country,
+        role: role.trim(),
+      });
+      onContinue(saved);
+    } catch (guestError) {
+      setError(guestError.message || "The access log could not be reached.");
+    }
   }
 
   return (

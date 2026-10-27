@@ -3,16 +3,17 @@ import {
   approveApprovalRequest,
   createApprovalRequest,
   declineApprovalRequest,
+  findGuestLogin,
   listApprovalRequests,
   loginAccessUser,
   recordAccessUser,
+  recordGuestLogin,
 } from "../services/accessApi";
 
 export { findAccessUser } from "../services/accessApi";
 
 const SESSION_KEY = "radius_access_session";
 const REGISTRY_KEY = "radius_registered_users";
-const GUEST_LOG_KEY = "radius_guest_log";
 
 export const DEMO_ACCOUNTS = {
   admin: {
@@ -275,26 +276,21 @@ export async function declineRequest(id, note) {
   return declined;
 }
 
-export function recordGuest({ name, email, country, role }) {
+export async function recordGuest({ name, email, country, role }) {
   const normalized = email.trim().toLowerCase();
   if (!isCompanyEmail(normalized)) {
     throw new Error(COMPANY_EMAIL_ERROR);
   }
-  const entry = {
+  return recordGuestLogin({
     name: titleName(name),
     email: normalized,
     country,
     role,
-    signedInAt: new Date().toISOString(),
-  };
-  const current = readGuestLog().filter((guest) => guest.email !== entry.email);
-  writeStore(GUEST_LOG_KEY, [entry, ...current]);
-  return entry;
+  });
 }
 
-export function readGuestLog() {
-  const stored = readStore(GUEST_LOG_KEY, []);
-  return Array.isArray(stored) ? stored : [];
+export async function readGuestLog(email) {
+  return findGuestLogin(email);
 }
 
 export function saveSession(session) {
