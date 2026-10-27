@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Check, Copy, ShieldCheck, X } from "lucide-react";
 import {
   COUNTRIES,
@@ -7,8 +7,7 @@ import {
   clearSession,
   declineRequest,
   displayName,
-  pendingApprovalCount,
-  readApprovals,
+  loadApprovals,
   readGuestLog,
   readSession,
 } from "../auth/accessSession";
@@ -65,16 +64,33 @@ export default function AccountSpace() {
 }
 
 function AdminApprovals() {
-  const [requests, setRequests] = useState(() => readApprovals());
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const pending = requests.filter((request) => request.status === "pending");
   const approved = requests.filter((request) => request.status === "approved");
   const declined = requests.filter((request) => request.status === "declined");
   const name = displayName(readSession());
 
-  function refresh() {
-    setRequests(readApprovals());
+  async function refresh() {
+    const items = await loadApprovals();
+    setRequests(items);
+    return items;
   }
+
+  useEffect(() => {
+    let cancel = false;
+    refresh()
+      .catch((loadError) => {
+        if (!cancel) setError(loadError.message || "The access log could not be reached.");
+      })
+      .finally(() => {
+        if (!cancel) setLoading(false);
+      });
+    return () => {
+      cancel = true;
+    };
+  }, []);
 
   return (
     <div className="account-space">
@@ -94,7 +110,7 @@ function AdminApprovals() {
         {error && <p className="account-error">{error}</p>}
 
         <div className="account-toolbar">
-          <span>{pendingApprovalCount()} pending</span>
+          <span>{pending.length} pending</span>
           <button
             className="dashboard-search-button account-approve-all"
             type="button"
@@ -114,7 +130,8 @@ function AdminApprovals() {
           </button>
         </div>
 
-        {pending.length === 0 && approved.length === 0 && declined.length === 0 && (
+        {loading && <p className="account-empty">Loading approval requests...</p>}
+        {!loading && pending.length === 0 && approved.length === 0 && declined.length === 0 && (
           <p className="account-empty">No approval requests yet. A production registration will appear here.</p>
         )}
 
@@ -131,11 +148,11 @@ function AdminApprovals() {
                 setError(approveError.message || "The access log could not be reached.");
               }
             }}
-            onDecline={(id, note) => {
+            onDecline={async (id, note) => {
               try {
                 setError("");
-                declineRequest(id, note);
-                refresh();
+                await declineRequest(id, note);
+                await refresh();
               } catch (declineError) {
                 setError(declineError.message || "This request could not be declined.");
               }

@@ -68,6 +68,18 @@ builder.Services.AddSingleton(sp =>
         : Path.Combine(environment.ContentRootPath, options.LogFile);
     return new UserAccessLog(path);
 });
+builder.Services.AddSingleton(sp =>
+{
+    var environment = sp.GetRequiredService<IWebHostEnvironment>();
+    var options = sp.GetRequiredService<IOptions<AccessLogOptions>>().Value;
+    var requestsFile = string.IsNullOrWhiteSpace(options.RequestsFile)
+        ? Path.Combine("logs", "radius-requests.log")
+        : options.RequestsFile;
+    var path = Path.IsPathRooted(requestsFile)
+        ? requestsFile
+        : Path.Combine(environment.ContentRootPath, requestsFile);
+    return new ApprovalLog(path);
+});
 
 // --------------------------------------------------
 // Existing CORS policy

@@ -1,10 +1,17 @@
-import { loginAccessUser, recordAccessUser } from "../services/accessApi";
+import { useEffect, useState } from "react";
+import {
+  approveApprovalRequest,
+  createApprovalRequest,
+  declineApprovalRequest,
+  listApprovalRequests,
+  loginAccessUser,
+  recordAccessUser,
+} from "../services/accessApi";
 
 export { findAccessUser } from "../services/accessApi";
 
 const SESSION_KEY = "radius_access_session";
 const REGISTRY_KEY = "radius_registered_users";
-const APPROVAL_KEY = "radius_approval_requests";
 const GUEST_LOG_KEY = "radius_guest_log";
 
 export const DEMO_ACCOUNTS = {
@@ -148,16 +155,6 @@ export async function loginProductionUser(email, password) {
   if (!isCompanyEmail(normalized)) {
     throw new Error(COMPANY_EMAIL_ERROR);
   }
-  const declined = readApprovals().find(
-    (request) => request.email === normalized && request.status === "declined",
-  );
-  if (declined) {
-    throw new Error(
-      declined.note
-        ? `This request was declined. ${declined.note}`
-        : "This request was declined.",
-    );
-  }
   const demoMatch =
     normalized === DEMO_ACCOUNTS.production.email &&
     password === DEMO_ACCOUNTS.production.password;
@@ -188,120 +185,93 @@ export async function changeProductionPassword(user, password) {
   return updated;
 }
 
-export function readApprovals() {
-  const stored = readStore(APPROVAL_KEY, []);
-  return Array.isArray(stored) ? stored : [];
+function notifyAccess() {
+  window.dispatchEvent(new Event("radius-access"));
 }
 
-function saveApprovals(requests) {
-  writeStore(APPROVAL_KEY, requests);
+export async function loadApprovals() {
+  return listApprovalRequests();
 }
 
-export function pendingApprovalCount() {
-  return readApprovals().filter((request) => request.status === "pending").length;
+export function usePendingApprovalCount(enabled) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (!enabled) {
+      setCount(0);
+      return undefined;
+    }
+
+    let cancel = false;
+    async function load() {
+      try {
+        const items = await listApprovalRequests();
+        if (!cancel) {
+          setCount(items.filter((item) => item.status === "pending").length);
+        }
+      } catch {
+        if (!cancel) setCount(0);
+      }
+    }
+
+    load();
+    window.addEventListener("radius-access", load);
+    const timer = window.setInterval(load, 15000);
+    return () => {
+      cancel = true;
+      window.removeEventListener("radius-access", load);
+      window.clearInterval(timer);
+    };
+  }, [enabled]);
+
+  return count;
 }
 
-export function submitApprovalRequest({ email, country, role, replaceDeclined = false }) {
+export async function submitApprovalRequest({ email, country, role, replaceDeclined = false }) {
   const normalized = email.trim().toLowerCase();
   if (!isCompanyEmail(normalized)) return { status: "invalid-email" };
-  if (findRegisteredUser(normalized)) {
-    return { status: "registered" };
-  }
-
-  const requests = readApprovals();
-  const existing = requests.find((request) => request.email === normalized);
-  if (existing?.status === "pending") return { status: "pending", request: existing };
-  if (existing?.status === "approved") return { status: "approved", request: existing };
-  if (existing?.status === "declined" && !replaceDeclined) {
-    return { status: "declined", request: existing };
-  }
-
-  const request = {
-    id: crypto.randomUUID(),
+  const result = await createApprovalRequest({
     email: normalized,
     name: nameFromEmail(normalized),
     country,
     role,
-    status: "pending",
-    requestedAt: new Date().toISOString(),
-    approvedAt: "",
-    declinedAt: "",
-    note: "",
-    temporaryPassword: "",
-  };
-  saveApprovals([request, ...requests.filter((item) => item.email !== normalized)]);
-  return { status: "created", request };
-}
-
-function temporaryPassword() {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-  const digits = "23456789";
-  const bytes = new Uint32Array(8);
-  crypto.getRandomValues(bytes);
-  const pick = (set, index) => set[bytes[index] % set.length];
-  return `Tmp${pick(digits, 0)}${pick(alphabet, 1)}${pick(alphabet, 2)}${pick(alphabet, 3)}#${pick(alphabet, 4)}${pick(alphabet, 5)}${pick(alphabet, 6)}${pick(alphabet, 7)}`;
+    replaceDeclined,
+  });
+  notifyAccess();
+  return result;
 }
 
 export async function approveRequest(id) {
-  const current = readApprovals().find((request) => request.id === id);
-  if (!current || current.status !== "pending") return current || null;
-
-  const password = temporaryPassword();
-  await recordAccessUser({
-    event: "approved",
-    email: current.email,
-    name: current.name,
-    country: current.country,
-    role: current.role,
-    password,
-    temporary: true,
-  });
-  registerProductionUser({
-    email: current.email,
-    name: current.name,
-    country: current.country,
-    role: current.role,
-    password,
-    temporary: true,
-  });
-
-  const approved = {
-    ...current,
-    status: "approved",
-    temporaryPassword: password,
-    approvedAt: new Date().toISOString(),
-  };
-  saveApprovals(
-    readApprovals().map((request) => (request.id === id ? approved : request)),
-  );
+  const approved = await approveApprovalRequest(id);
+  if (approved?.email) {
+    registerProductionUser({
+      email: approved.email,
+      name: approved.name,
+      country: approved.country,
+      role: approved.role,
+      password: approved.temporaryPassword,
+      temporary: true,
+    });
+  }
+  notifyAccess();
   return approved;
 }
 
 export async function approveAllPending() {
-  const pending = readApprovals().filter((request) => request.status === "pending");
+  const pending = (await listApprovalRequests()).filter((request) => request.status === "pending");
   for (const request of pending) {
     await approveRequest(request.id);
   }
-  return readApprovals();
+  return listApprovalRequests();
 }
 
-export function declineRequest(id, note) {
+export async function declineRequest(id, note) {
   const trimmed = String(note || "").trim();
   if (!trimmed) {
     throw new Error("Add a note before declining this request.");
   }
-  const current = readApprovals().find((request) => request.id === id);
-  if (!current || current.status !== "pending") return current || null;
-
-  const declined = {
-    ...current,
-    status: "declined",
-    note: trimmed,
-    declinedAt: new Date().toISOString(),
-  };
-  saveApprovals(
-    readApprovals().map((request) => (request.id === id ? declined : request)),
-  );
+  const declined = await declineApprovalRequest(id, trimmed);
+  notifyAccess();
   return declined;
 }
 

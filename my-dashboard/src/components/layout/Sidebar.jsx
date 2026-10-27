@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
 import { ChevronRight, ChevronLeft, ChartNoAxesColumnIncreasing, ShieldCheck, UserRound } from "lucide-react";
 import { NAV_ITEMS } from "../../data/navigation";
-import { pendingApprovalCount, readSession } from "../../auth/accessSession";
+import { readSession, usePendingApprovalCount } from "../../auth/accessSession";
 
 function Sidebar({
   collapsed,
@@ -11,16 +10,9 @@ function Sidebar({
   activeId = "search",
   onNavigate = () => {},
 }) {
-  const [revision, setRevision] = useState(0);
-  useEffect(() => {
-    const bump = () => setRevision((value) => value + 1);
-    window.addEventListener("radius-access", bump);
-    return () => window.removeEventListener("radius-access", bump);
-  }, []);
-
   // Add Usage Analytics without requiring changes to the existing navigation file.
   const session = readSession();
-  const pending = revision >= 0 ? pendingApprovalCount() : 0;
+  const pending = usePendingApprovalCount(session?.mode === "admin");
   const hasAnalytics = NAV_ITEMS.some((item) => item.id === "analytics");
   const items = hasAnalytics
     ? [...NAV_ITEMS]

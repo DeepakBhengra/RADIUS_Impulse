@@ -4,8 +4,8 @@ import radiusHeaderLogo from "../../assets/RADIUS_Header_Logo.png";
 import {
   displayName,
   initialsFromName,
-  pendingApprovalCount,
   readSession,
+  usePendingApprovalCount,
 } from "../../auth/accessSession";
 
 function useAccessRevision() {
@@ -23,7 +23,7 @@ function Header({ toggleSidebar, onAccount }) {
   const session = readSession();
   const name = displayName(session);
   const initials = initialsFromName(name);
-  const pending = session?.mode === "admin" ? pendingApprovalCount() : 0;
+  const pending = usePendingApprovalCount(session?.mode === "admin");
 
   function openAccount() {
     if (!session) return;

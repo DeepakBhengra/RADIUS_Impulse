@@ -17,7 +17,6 @@ import {
   DEMO_ACCOUNTS,
   PROD_ROLES,
   changeProductionPassword,
-  findAccessUser,
   isCompanyEmail,
   loginProductionUser,
   passwordIsValid,
@@ -307,15 +306,10 @@ function ProductionRegister({ onBack, onSignIn }) {
       return;
     }
     try {
-      const existing = await findAccessUser(email);
-      if (existing) {
-        setResult({ status: existing.temporary ? "approved" : "registered" });
-        return;
-      }
-    } catch {
-      // A request can still be saved locally when the access log is offline.
+      setResult(await submitApprovalRequest({ email, country: form.country, role: form.role.trim() }));
+    } catch (requestError) {
+      setResult({ status: "failed", message: requestError.message || "The access log could not be reached." });
     }
-    setResult(submitApprovalRequest({ email, country: form.country, role: form.role.trim() }));
   }
 
   return (
@@ -347,6 +341,9 @@ function ProductionRegister({ onBack, onSignIn }) {
           The request for {email} was declined.
           {result.request?.note ? ` Note: ${result.request.note}` : ""}
         </div>
+      )}
+      {result?.status === "failed" && (
+        <div className="radius-error">{result.message}</div>
       )}
 
       {result?.status !== "created" && (
@@ -385,16 +382,21 @@ function ProductionRegister({ onBack, onSignIn }) {
         <button
           className="dashboard-search-button"
           type="button"
-          onClick={() =>
-            setResult(
-              submitApprovalRequest({
+          onClick={async () => {
+            try {
+              setResult(await submitApprovalRequest({
                 email,
                 country: form.country,
                 role: form.role.trim(),
                 replaceDeclined: true,
-              }),
-            )
-          }
+              }));
+            } catch (requestError) {
+              setResult({
+                status: "failed",
+                message: requestError.message || "The access log could not be reached.",
+              });
+            }
+          }}
         >
           Send a new request
         </button>

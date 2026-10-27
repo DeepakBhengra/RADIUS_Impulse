@@ -54,3 +54,42 @@ export async function loginAccessUser(email, password) {
     throw toError(error, "The access log could not be reached.");
   }
 }
+
+export async function createApprovalRequest(request) {
+  try {
+    const response = await client.post("/requests", request);
+    return response.data;
+  } catch (error) {
+    if (error.response?.status === 409 && error.response.data?.status) {
+      return error.response.data;
+    }
+    throw toError(error, "The access log could not be reached.");
+  }
+}
+
+export async function listApprovalRequests() {
+  try {
+    const response = await client.get("/requests");
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    throw toError(error, "The access log could not be reached.");
+  }
+}
+
+export async function approveApprovalRequest(id) {
+  try {
+    const response = await client.post(`/requests/${encodeURIComponent(id)}/approve`);
+    return response.data;
+  } catch (error) {
+    throw toError(error, "The access log could not be reached.");
+  }
+}
+
+export async function declineApprovalRequest(id, note) {
+  try {
+    const response = await client.post(`/requests/${encodeURIComponent(id)}/decline`, { note });
+    return response.data;
+  } catch (error) {
+    throw toError(error, "The access log could not be reached.");
+  }
+}
