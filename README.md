@@ -83,7 +83,7 @@ Oracle passwords are user secrets, not files in git:
 
 The project user-secrets id is `b7da84d9-96e6-47f8-823c-0dad566774cb`.
 
-Admin sign-in passwords are not in the dashboard. The API reads `backend-dotnet/ImpulseSupportTool_Repo/Access/admins.enc`, an AES-256-GCM vault. The decryption key comes from `RADIUS_ADMIN_KEY` or from `admin-key.local` in the API project folder. That key file is gitignored. Without it, admin sign-in is unavailable and production sign-in still works.
+Admin sign-in passwords are not in the dashboard. The API reads `backend-dotnet/ImpulseSupportTool_Repo/Access/admins.enc`, an AES-256-GCM vault. `AdminVault:Key` in `appsettings.json` opens that file. Restart the API after changing it. Without a key, admin sign-in says it is not configured, and production sign-in still works.
 
 ## UI
 
