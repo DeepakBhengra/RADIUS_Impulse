@@ -330,7 +330,7 @@ export async function submitApprovalRequest({ email, country, countries, role, r
 
 export async function approveRequest(id) {
   const approved = await approveApprovalRequest(id);
-  if (approved?.email) {
+  if (approved?.email && approved.temporaryPassword) {
     const countries = orderCountries(approved.countries?.length ? approved.countries : approved.country);
     registerProductionUser({
       email: approved.email,

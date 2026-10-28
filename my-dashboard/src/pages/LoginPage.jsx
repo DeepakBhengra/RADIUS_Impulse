@@ -76,7 +76,6 @@ export default function LoginPage() {
             {view === "prod-register" && (
               <ProductionRegister
                 onBack={() => setView("choose")}
-                onSignIn={() => setView("prod-signin")}
               />
             )}
             {view === "prod-signin" && (
@@ -294,7 +293,7 @@ function ProductionSignIn({ onBack, onRegister, onGuest, onSignedIn, initialEmai
   );
 }
 
-function ProductionRegister({ onBack, onSignIn }) {
+function ProductionRegister({ onBack }) {
   const [form, setForm] = useState(EMPTY_REGISTER);
   const [result, setResult] = useState(null);
   const email = form.email.trim().toLowerCase();
@@ -323,7 +322,7 @@ function ProductionRegister({ onBack, onSignIn }) {
     <Panel
       icon={<UserRound size={16} />}
       title="Production Register"
-      subtitle="Submit your email, the countries this production access is for, and your role. An admin approves the request and a temporary password is issued for this login ID."
+      subtitle="Submit your email and the countries this production access is for. An admin approves the request. A login that already has production access can request more countries."
     >
       {result?.status === "created" && (
         <div className="radius-success">
@@ -335,9 +334,9 @@ function ProductionRegister({ onBack, onSignIn }) {
           An approval request for {email} is already waiting for an admin.
         </div>
       )}
-      {(result?.status === "registered" || result?.status === "approved") && (
+      {result?.status === "already-have" && (
         <div className="radius-error">
-          {email} already has production access. Sign in with the password issued for this login ID.
+          {email} already has production access for the selected countries. Choose another country to send a new approval request.
         </div>
       )}
       {result?.status === "invalid-email" && (
@@ -376,11 +375,6 @@ function ProductionRegister({ onBack, onSignIn }) {
         </form>
       )}
 
-      {(result?.status === "registered" || result?.status === "approved") && (
-        <button className="dashboard-search-button" type="button" onClick={onSignIn}>
-          Go to Sign In
-        </button>
-      )}
       {result?.status === "declined" && (
         <button
           className="dashboard-search-button"

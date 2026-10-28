@@ -184,21 +184,10 @@ public sealed class AccessController : ControllerBase
         }
 
         var email = request.Email.Trim().ToLowerInvariant();
-        var existingUser = await _log.LatestAsync(email, cancellationToken);
-        if (existingUser is not null)
-        {
-            return Conflict(new { status = "registered", message = "This email already has production access." });
-        }
-
         var existing = await _requests.LatestByEmailAsync(email, cancellationToken);
         if (existing?.Status == "pending")
         {
             return Ok(new { status = "pending", request = existing });
-        }
-
-        if (existing?.Status == "approved")
-        {
-            return Conflict(new { status = "approved", request = existing });
         }
 
         if (existing?.Status == "declined" && !request.ReplaceDeclined)
@@ -206,13 +195,27 @@ public sealed class AccessController : ControllerBase
             return Ok(new { status = "declined", request = existing });
         }
 
+        var existingUser = await _log.LatestAsync(email, cancellationToken);
+        var requestedCountries = AdditionalCountries(existingUser?.Country, countries);
+        if (existingUser is not null && requestedCountries.Length == 0)
+        {
+            return Ok(new
+            {
+                status = "already-have",
+                countries = SplitCountries(existingUser.Country),
+                message = "The selected countries already have production access.",
+            });
+        }
+
         var created = new ApprovalRequestRecord
         {
             Id = Guid.NewGuid().ToString(),
             Email = email,
-            Name = string.IsNullOrWhiteSpace(request.Name) ? NameFromEmail(email) : request.Name.Trim(),
-            Country = countries,
-            Role = request.Role.Trim(),
+            Name = string.IsNullOrWhiteSpace(existingUser?.Name)
+                ? (string.IsNullOrWhiteSpace(request.Name) ? NameFromEmail(email) : request.Name.Trim())
+                : existingUser.Name,
+            Country = existingUser is null ? countries : requestedCountries,
+            Role = string.IsNullOrWhiteSpace(existingUser?.Role) ? request.Role.Trim() : existingUser.Role,
             Status = "pending",
             RequestedAt = DateTimeOffset.UtcNow,
         };
@@ -229,22 +232,36 @@ public sealed class AccessController : ControllerBase
             return NotFound(new { message = "This approval request was not found." });
         }
 
-        var password = TemporaryPassword();
+        var existingUser = await _log.LatestAsync(current.Email, cancellationToken);
+        var mergedCountries = MergeCountries(existingUser?.Country, current.Country);
+        var password = existingUser?.Password ?? "";
+        var temporary = existingUser?.Temporary ?? true;
+        var issuedPassword = "";
+        if (string.IsNullOrEmpty(password))
+        {
+            password = TemporaryPassword();
+            temporary = true;
+            issuedPassword = password;
+        }
+
         await _log.AppendAsync(new UserAccessRecord
         {
             Event = "approved",
             Email = current.Email,
-            Name = current.Name,
-            Country = current.Country,
-            Role = current.Role,
+            Name = string.IsNullOrWhiteSpace(existingUser?.Name) ? current.Name : existingUser.Name,
+            Country = mergedCountries,
+            Role = string.IsNullOrWhiteSpace(existingUser?.Role) ? current.Role : existingUser.Role,
             Password = password,
-            Temporary = true,
+            Temporary = temporary,
             At = DateTimeOffset.UtcNow,
         }, cancellationToken);
 
         var approved = Copy(current);
         approved.Status = "approved";
-        approved.TemporaryPassword = password;
+        approved.TemporaryPassword = issuedPassword;
+        approved.Note = existingUser is null
+            ? current.Note
+            : "Existing production access kept. These countries were added.";
         approved.ApprovedAt = DateTimeOffset.UtcNow;
         await _requests.AppendAsync(approved, cancellationToken);
         return Ok(approved);
@@ -388,6 +405,28 @@ public sealed class AccessController : ControllerBase
         }
 
         return string.Join(',', unique);
+    }
+
+    private static string AdditionalCountries(string? owned, string requested)
+    {
+        var have = new HashSet<string>(SplitCountries(owned), StringComparer.OrdinalIgnoreCase);
+        var extra = SplitCountries(requested).Where(code => !have.Contains(code)).ToArray();
+        return string.Join(',', extra);
+    }
+
+    private static string MergeCountries(string? current, string? added)
+    {
+        var merged = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var code in SplitCountries(current).Concat(SplitCountries(added)))
+        {
+            if (seen.Add(code))
+            {
+                merged.Add(code);
+            }
+        }
+
+        return string.Join(',', merged);
     }
 
     private static string[] SplitCountries(string? country)
