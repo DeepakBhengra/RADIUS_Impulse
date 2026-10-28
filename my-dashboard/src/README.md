@@ -77,8 +77,8 @@ connecting real DB2/ODS/TBX/MQ/Datadog calls later is a one-file change.
 The app now calls your `.NET` `GetOrder` endpoint by default.
 
 1. Copy `.env.example` to `.env.local` and set `VITE_ORDER_API_BASE_URL` if
-   your backend isn't at `http://10.129.180.117:5000/api/order`.
-2. Your backend must allow CORS from `http://localhost:5173` (Vite's dev
+   your backend isn't at `http://10.24.169.28:7011/api/order`.
+2. Your backend must allow CORS from `http://10.24.169.28:7010` (Vite's dev
    server origin) or the browser will block the request even though the
    endpoint works fine from Postman.
 3. The search bar currently only accepts **PO Number + Country Code**,

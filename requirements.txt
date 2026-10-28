@@ -107,11 +107,11 @@ API
 8. Configuration
 ----------------
 my-dashboard/.env.local
-- VITE_ORDER_API_BASE_URL   default http://localhost:5298/api/order
+- VITE_ORDER_API_BASE_URL   default http://10.24.169.28:7011/api/order
 - VITE_USE_MOCK_API         true uses local mock data; false calls the API
 
 API launch profile "http"
-- http://localhost:5298
+- http://10.24.169.28:7011
 - ASPNETCORE_ENVIRONMENT=Development
 
 9. Not in this release

@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const orderBase =
-  import.meta.env.VITE_ORDER_API_BASE_URL || "http://localhost:5298/api/order";
+  import.meta.env.VITE_ORDER_API_BASE_URL || "http://10.24.169.28:7011/api/order";
 const baseURL = orderBase.replace(/\/api\/order\/?$/, "/api/access");
 
 const client = axios.create({

@@ -114,7 +114,7 @@ Empty, loading, and error states are separate panels. Admin and production sign-
 
 ## Backend
 
-Runtime is .NET 8. The HTTP launch profile listens on `http://localhost:5298`.
+Runtime is .NET 8. The HTTP launch profile listens on `http://10.24.169.28:7011`. The dashboard listens on `http://10.24.169.28:7010`.
 
 Request example:
 
@@ -155,7 +155,7 @@ npm run dev
 `npm run dev` starts Vite. Open the local URL it prints. Default mock settings in `my-dashboard/.env.local`:
 
 ```text
-VITE_ORDER_API_BASE_URL=http://localhost:5298/api/order
+VITE_ORDER_API_BASE_URL=http://10.24.169.28:7011/api/order
 VITE_USE_MOCK_API=true
 ```
 
@@ -219,7 +219,7 @@ dotnet user-secrets set "ODSConnectionProd:Password" "<prod-password>"
 dotnet run --launch-profile http
 ```
 
-The `http` profile listens on `http://localhost:5298`. Swagger is `http://localhost:5298/swagger`.
+The `http` profile listens on `http://10.24.169.28:7011`. Swagger is `http://10.24.169.28:7011/swagger`.
 
 Other backend commands, from `backend-dotnet/ImpulseSupportTool_Repo`:
 
@@ -232,7 +232,7 @@ dotnet run --launch-profile https
 | --- | --- |
 | `dotnet restore` | Restores NuGet packages for `ImpulseSupportTool_Repo.csproj` |
 | `dotnet build` | Compiles the API |
-| `dotnet run --launch-profile http` | Runs the API at `http://localhost:5298` |
+| `dotnet run --launch-profile http` | Runs the API at `http://10.24.169.28:7011` |
 | `dotnet run --launch-profile https` | Same port, Development environment, HTTPS profile in `launchSettings.json` |
 | `dotnet user-secrets set` | Stores an ODS password outside the repo |
 
@@ -257,7 +257,7 @@ cd my-dashboard
 Set `my-dashboard/.env.local`:
 
 ```text
-VITE_ORDER_API_BASE_URL=http://localhost:5298/api/order
+VITE_ORDER_API_BASE_URL=http://10.24.169.28:7011/api/order
 VITE_USE_MOCK_API=false
 ```
 
@@ -267,7 +267,7 @@ Restart the dev server:
 npm run dev
 ```
 
-Search with a customer PO, a country code, and Prod, Qa, or Dev. The browser calls `http://localhost:5298/api/order/GetOrder`.
+Search with a customer PO, a country code, and Prod, Qa, or Dev. The browser calls `http://10.24.169.28:7011/api/order/GetOrder`.
 
 ## Repository layout
 
