@@ -20,10 +20,10 @@ public sealed class ApprovalLog
         command.CommandText = """
             INSERT INTO approval_requests (
                 id, email, name, country, role, status, note, temporary_password,
-                requested_at, approved_at, declined_at)
+                requested_at, approved_at, declined_at, kind)
             VALUES (
                 $id, $email, $name, $country, $role, $status, $note, $temporaryPassword,
-                $requestedAt, $approvedAt, $declinedAt)
+                $requestedAt, $approvedAt, $declinedAt, $kind)
             ON CONFLICT(id) DO UPDATE SET
                 email = excluded.email,
                 name = excluded.name,
@@ -34,7 +34,8 @@ public sealed class ApprovalLog
                 temporary_password = excluded.temporary_password,
                 requested_at = excluded.requested_at,
                 approved_at = excluded.approved_at,
-                declined_at = excluded.declined_at;
+                declined_at = excluded.declined_at,
+                kind = excluded.kind;
             """;
         Bind(command, record);
         await command.ExecuteNonQueryAsync(cancellationToken);
@@ -46,30 +47,36 @@ public sealed class ApprovalLog
         await using var command = connection.CreateCommand();
         command.CommandText = """
             SELECT id, email, name, country, role, status, note, temporary_password,
-                   requested_at, approved_at, declined_at
+                   requested_at, approved_at, declined_at, kind
             FROM approval_requests AS request
             WHERE requested_at = (
                 SELECT MAX(latest.requested_at)
                 FROM approval_requests AS latest
-                WHERE latest.email = request.email)
+                WHERE latest.email = request.email
+                  AND COALESCE(latest.kind, 'access') = COALESCE(request.kind, 'access'))
             ORDER BY requested_at DESC;
             """;
         return await ReadAllAsync(command, cancellationToken);
     }
 
-    public async Task<ApprovalRequestRecord?> LatestByEmailAsync(string email, CancellationToken cancellationToken)
+    public async Task<ApprovalRequestRecord?> LatestByEmailAsync(
+        string email,
+        string kind,
+        CancellationToken cancellationToken)
     {
         await using var connection = await ConnectAsync(cancellationToken);
         await using var command = connection.CreateCommand();
         command.CommandText = """
             SELECT id, email, name, country, role, status, note, temporary_password,
-                   requested_at, approved_at, declined_at
+                   requested_at, approved_at, declined_at, kind
             FROM approval_requests
             WHERE email = $email
+              AND COALESCE(kind, 'access') = $kind
             ORDER BY requested_at DESC
             LIMIT 1;
             """;
         command.Parameters.AddWithValue("$email", email.Trim().ToLowerInvariant());
+        command.Parameters.AddWithValue("$kind", string.IsNullOrWhiteSpace(kind) ? "access" : kind);
         var rows = await ReadAllAsync(command, cancellationToken);
         return rows.FirstOrDefault();
     }
@@ -80,7 +87,7 @@ public sealed class ApprovalLog
         await using var command = connection.CreateCommand();
         command.CommandText = """
             SELECT id, email, name, country, role, status, note, temporary_password,
-                   requested_at, approved_at, declined_at
+                   requested_at, approved_at, declined_at, kind
             FROM approval_requests
             WHERE id = $id
             LIMIT 1;
@@ -116,6 +123,7 @@ public sealed class ApprovalLog
                     CREATE INDEX IF NOT EXISTS idx_approval_email ON approval_requests(email);
                     """;
                 await command.ExecuteNonQueryAsync(cancellationToken);
+                await EnsureKindColumnAsync(connection, cancellationToken);
                 _ready = true;
             }
 
@@ -140,6 +148,30 @@ public sealed class ApprovalLog
         command.Parameters.AddWithValue("$requestedAt", record.RequestedAt.ToString("o"));
         command.Parameters.AddWithValue("$approvedAt", record.ApprovedAt?.ToString("o") ?? (object)DBNull.Value);
         command.Parameters.AddWithValue("$declinedAt", record.DeclinedAt?.ToString("o") ?? (object)DBNull.Value);
+        command.Parameters.AddWithValue("$kind", string.IsNullOrWhiteSpace(record.Kind) ? "access" : record.Kind);
+    }
+
+    private static async Task EnsureKindColumnAsync(SqliteConnection connection, CancellationToken cancellationToken)
+    {
+        var names = new List<string>();
+        await using (var info = connection.CreateCommand())
+        {
+            info.CommandText = "PRAGMA table_info(approval_requests)";
+            await using var reader = await info.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                names.Add(reader.GetString(1));
+            }
+        }
+
+        if (names.Contains("kind", StringComparer.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        await using var alter = connection.CreateCommand();
+        alter.CommandText = "ALTER TABLE approval_requests ADD COLUMN kind TEXT NOT NULL DEFAULT 'access'";
+        await alter.ExecuteNonQueryAsync(cancellationToken);
     }
 
     private static async Task<List<ApprovalRequestRecord>> ReadAllAsync(
@@ -163,6 +195,7 @@ public sealed class ApprovalLog
                 RequestedAt = DateTimeOffset.Parse(reader.GetString(8)),
                 ApprovedAt = reader.IsDBNull(9) ? null : DateTimeOffset.Parse(reader.GetString(9)),
                 DeclinedAt = reader.IsDBNull(10) ? null : DateTimeOffset.Parse(reader.GetString(10)),
+                Kind = reader.FieldCount > 11 && !reader.IsDBNull(11) ? reader.GetString(11) : "access",
             });
         }
 

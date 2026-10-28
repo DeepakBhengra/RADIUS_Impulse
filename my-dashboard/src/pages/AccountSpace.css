@@ -214,6 +214,11 @@
   line-height: 1.4;
 }
 
+.account-row-note.is-success {
+  background: #eff6ff;
+  color: #1e3a5f;
+}
+
 .account-profile {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

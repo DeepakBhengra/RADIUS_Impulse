@@ -19,6 +19,8 @@ public sealed class ApprovalRequestRecord
 
     public string Status { get; set; } = "pending";
 
+    public string Kind { get; set; } = "access";
+
     public string Note { get; set; } = "";
 
     public string TemporaryPassword { get; set; } = "";

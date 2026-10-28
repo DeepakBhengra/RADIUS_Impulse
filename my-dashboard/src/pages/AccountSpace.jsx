@@ -97,7 +97,7 @@ function AdminApprovals() {
           <div>
             <h2>Good day, {name}</h2>
             <p>
-              Approving a request creates a temporary password for that login ID. Declining a request keeps a note with the decision.
+              Approving production access creates a temporary password the first time. A forgot-password request asks you to create a new temporary password for that login.
             </p>
           </div>
         </div>
@@ -127,7 +127,7 @@ function AdminApprovals() {
 
         {loading && <p className="account-empty">Loading approval requests...</p>}
         {!loading && pending.length === 0 && approved.length === 0 && declined.length === 0 && (
-          <p className="account-empty">No approval requests yet. A production registration will appear here.</p>
+          <p className="account-empty">No approval requests yet. A production registration or password reset will appear here.</p>
         )}
 
         {pending.length > 0 && (
@@ -181,7 +181,9 @@ function RequestTable({ title, requests, onApprove, onDecline, dateLabel = "Appr
           <article key={request.id} className="account-row">
             <div>
               <strong>{request.email}</strong>
-              <span>{request.name}</span>
+              <span>
+                {request.kind === "password_reset" ? `Password reset · ${request.name}` : request.name}
+              </span>
             </div>
             <div>
               <span>Countries</span>
@@ -200,16 +202,21 @@ function RequestTable({ title, requests, onApprove, onDecline, dateLabel = "Appr
               <strong>{formatWhen(request[dateKey])}</strong>
             </div>
             <div>
-              <span>Temporary password</span>
+              <span>{request.kind === "password_reset" ? "New password" : "Temporary password"}</span>
               {request.temporaryPassword ? (
                 <PasswordValue value={request.temporaryPassword} />
               ) : (
                 <strong>—</strong>
               )}
             </div>
-            {request.note && <p className="account-row-note">Note: {request.note}</p>}
+            {request.note && (
+              <p className={`account-row-note${request.status === "declined" ? "" : " is-success"}`}>
+                Note: {request.note}
+              </p>
+            )}
             {onApprove && (
               <DecisionActions
+                approveLabel={request.kind === "password_reset" ? "Create password" : "Approve"}
                 onApprove={() => onApprove(request.id)}
                 onDecline={(note) => onDecline(request.id, note)}
               />
@@ -221,7 +228,7 @@ function RequestTable({ title, requests, onApprove, onDecline, dateLabel = "Appr
   );
 }
 
-function DecisionActions({ onApprove, onDecline }) {
+function DecisionActions({ onApprove, onDecline, approveLabel = "Approve" }) {
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
 
@@ -240,7 +247,7 @@ function DecisionActions({ onApprove, onDecline }) {
       </label>
       <div className="account-decide-buttons">
         <button type="button" className="account-approve" onClick={onApprove}>
-          <Check size={14} /> Approve
+          <Check size={14} /> {approveLabel}
         </button>
         <button
           type="button"

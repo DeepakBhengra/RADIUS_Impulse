@@ -26,6 +26,7 @@ import {
   recordGuest,
   saveSession,
   submitApprovalRequest,
+  submitPasswordReset,
 } from "../auth/accessSession";
 import "../components/search/DashboardSearch.css";
 import "./LoginPage.css";
@@ -91,6 +92,7 @@ export default function LoginPage() {
                   setView("prod-register");
                 }}
                 onGuest={() => setView("guest")}
+                onForgot={() => setView("forgot-password")}
                 onSignedIn={(user) => {
                   if (user.temporary) {
                     setPendingUser(user);
@@ -121,6 +123,11 @@ export default function LoginPage() {
                   setSignInNotice("Password is changed");
                   setView("prod-signin");
                 }}
+              />
+            )}
+            {view === "forgot-password" && (
+              <ForgotPassword
+                onBack={() => setView("prod-signin")}
               />
             )}
             {view === "guest" && (
@@ -239,7 +246,7 @@ function AdminSignIn({ onBack, onSignedIn }) {
   );
 }
 
-function ProductionSignIn({ onBack, onRegister, onGuest, onSignedIn, initialEmail = "", notice = "" }) {
+function ProductionSignIn({ onBack, onRegister, onGuest, onForgot, onSignedIn, initialEmail = "", notice = "" }) {
   const [email, setEmail] = useState(initialEmail || DEMO_ACCOUNTS.production.email);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -276,6 +283,9 @@ function ProductionSignIn({ onBack, onRegister, onGuest, onSignedIn, initialEmai
         {error && <div className="radius-error">{error}</div>}
         <button className="dashboard-search-button" type="submit">Sign In</button>
       </form>
+      <button className="radius-link" type="button" onClick={onForgot}>
+        Forgot password
+      </button>
       <p className="radius-demo">
         Sample production user: {DEMO_ACCOUNTS.production.email} / {DEMO_ACCOUNTS.production.password}
       </p>
@@ -288,6 +298,75 @@ function ProductionSignIn({ onBack, onRegister, onGuest, onSignedIn, initialEmai
       </button>
       <button className="radius-link" type="button" onClick={onBack}>
         Back to access options
+      </button>
+    </Panel>
+  );
+}
+
+function ForgotPassword({ onBack }) {
+  const [email, setEmail] = useState("");
+  const [result, setResult] = useState(null);
+  const normalized = email.trim().toLowerCase();
+
+  async function submit(event) {
+    event.preventDefault();
+    if (!normalized.includes("@")) return;
+    if (!isCompanyEmail(normalized)) {
+      setResult({ status: "invalid-email" });
+      return;
+    }
+    try {
+      setResult(await submitPasswordReset(normalized));
+    } catch (resetError) {
+      setResult({ status: "failed", message: resetError.message || "The access log could not be reached." });
+    }
+  }
+
+  return (
+    <Panel
+      icon={<Lock size={16} />}
+      title="Forgot Password"
+      subtitle="Enter the production login email. The request goes to an admin, who creates a new temporary password."
+    >
+      {result?.status === "created" && (
+        <div className="radius-success">
+          Password reset request for {normalized} is sent to Admin, Thank You
+        </div>
+      )}
+      {result?.status === "pending" && (
+        <div className="radius-error">
+          A password reset for {normalized} is already waiting for an admin.
+        </div>
+      )}
+      {result?.status === "unknown" && (
+        <div className="radius-error">This email does not have production access.</div>
+      )}
+      {result?.status === "invalid-email" && (
+        <div className="radius-error">{COMPANY_EMAIL_ERROR}</div>
+      )}
+      {result?.status === "failed" && (
+        <div className="radius-error">{result.message}</div>
+      )}
+      {result?.status !== "created" && (
+        <form onSubmit={submit} className="radius-form">
+          <Field
+            label="Company email"
+            type="email"
+            icon={<Mail size={15} />}
+            value={email}
+            onChange={(value) => {
+              setResult(null);
+              setEmail(value);
+            }}
+          />
+          <button className="dashboard-search-button" type="submit" disabled={!normalized.includes("@")}>
+            Send reset request
+          </button>
+        </form>
+      )}
+      <p className="radius-note">Use the same @ingrammicro.com email ID you use for Production Sign In.</p>
+      <button className="radius-link" type="button" onClick={onBack}>
+        Back to Production Sign In
       </button>
     </Panel>
   );

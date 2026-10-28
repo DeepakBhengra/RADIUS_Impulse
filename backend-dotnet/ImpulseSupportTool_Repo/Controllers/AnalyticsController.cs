@@ -443,6 +443,7 @@ public sealed class AnalyticsController : ControllerBase
         }
 
         var events = new List<AnalyticsEvent>();
+        var sessionEvents = new List<AnalyticsEvent>();
 
         var logFiles = Directory.GetFiles(
             _logDirectory,
@@ -474,13 +475,16 @@ public sealed class AnalyticsController : ControllerBase
                             analyticsEvent.EventType,
                             "tab_view",
                             StringComparison.OrdinalIgnoreCase) &&
-                        !string.IsNullOrWhiteSpace(analyticsEvent.Tab) &&
-                        string.Equals(
-                            analyticsEvent.SessionId,
-                            sessionId,
-                            StringComparison.Ordinal))
+                        !string.IsNullOrWhiteSpace(analyticsEvent.Tab))
                     {
                         events.Add(analyticsEvent);
+                        if (string.Equals(
+                                analyticsEvent.SessionId,
+                                sessionId,
+                                StringComparison.Ordinal))
+                        {
+                            sessionEvents.Add(analyticsEvent);
+                        }
                     }
                 }
                 catch (System.Text.Json.JsonException)
@@ -490,7 +494,8 @@ public sealed class AnalyticsController : ControllerBase
             }
         }
 
-        var recentTabs = events
+        var source = sessionEvents.Count > 0 ? sessionEvents : events;
+        var recentTabs = source
             .OrderByDescending(e => e.TimestampUtc)
             .Take(5)
             .Select(e => new

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   approveApprovalRequest,
   createApprovalRequest,
+  createPasswordReset,
   declineApprovalRequest,
   findGuestLogin,
   listApprovalRequests,
@@ -309,6 +310,14 @@ export function usePendingApprovalCount(enabled) {
   }, [enabled]);
 
   return count;
+}
+
+export async function submitPasswordReset(email) {
+  const normalized = email.trim().toLowerCase();
+  if (!isCompanyEmail(normalized)) return { status: "invalid-email" };
+  const result = await createPasswordReset(normalized);
+  notifyAccess();
+  return result;
 }
 
 export async function submitApprovalRequest({ email, country, countries, role, replaceDeclined = false }) {

@@ -45,6 +45,12 @@ builder.Services.AddScoped<EnvironmentMapper>();
 // --------------------------------------------------
 builder.Services.Configure<AnalyticsOptions>(
     builder.Configuration.GetSection("Analytics"));
+builder.Services.PostConfigure<AnalyticsOptions>(options =>
+{
+    options.LogDirectory = ResolveAnalyticsDirectory(
+        builder.Environment.ContentRootPath,
+        options.LogDirectory);
+});
 
 // FIX: Register AnalyticsOptions directly because
 // AnalyticsQueue expects AnalyticsOptions in its constructor.
@@ -146,6 +152,20 @@ app.MapGet("/debug/routes", (IEnumerable<EndpointDataSource> sources) =>
 );
 
 app.Run();
+
+static string ResolveAnalyticsDirectory(string contentRoot, string? configured)
+{
+    var path = string.IsNullOrWhiteSpace(configured)
+        ? Path.Combine("logs", "analytics")
+        : configured.Trim();
+    var windowsPath = path.Contains(':') || path.Contains('\\');
+    if (windowsPath && !OperatingSystem.IsWindows())
+    {
+        return Path.Combine(contentRoot, "logs", "analytics");
+    }
+
+    return Path.IsPathRooted(path) ? path : Path.Combine(contentRoot, path);
+}
 
 static string ResolveAccessPath(IWebHostEnvironment environment, string? configured, string fallback)
 {

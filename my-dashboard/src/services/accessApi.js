@@ -55,6 +55,15 @@ export async function loginAccessUser(email, password) {
   }
 }
 
+export async function createPasswordReset(email) {
+  try {
+    const response = await client.post("/password-resets", { email });
+    return response.data;
+  } catch (error) {
+    throw toError(error, "The access log could not be reached.");
+  }
+}
+
 export async function createApprovalRequest(request) {
   try {
     const response = await client.post("/requests", request);

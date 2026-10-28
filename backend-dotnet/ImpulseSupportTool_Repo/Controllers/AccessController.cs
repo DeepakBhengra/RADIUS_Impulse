@@ -83,7 +83,7 @@ public sealed class AccessController : ControllerBase
         var record = await _log.LatestAsync(request.Email.Trim(), cancellationToken);
         if (record is null)
         {
-            var approval = await _requests.LatestByEmailAsync(request.Email.Trim(), cancellationToken);
+            var approval = await _requests.LatestByEmailAsync(request.Email.Trim(), "access", cancellationToken);
             if (approval?.Status == "pending")
             {
                 return StatusCode(StatusCodes.Status403Forbidden, new
@@ -184,7 +184,7 @@ public sealed class AccessController : ControllerBase
         }
 
         var email = request.Email.Trim().ToLowerInvariant();
-        var existing = await _requests.LatestByEmailAsync(email, cancellationToken);
+        var existing = await _requests.LatestByEmailAsync(email, "access", cancellationToken);
         if (existing?.Status == "pending")
         {
             return Ok(new { status = "pending", request = existing });
@@ -216,6 +216,7 @@ public sealed class AccessController : ControllerBase
                 : existingUser.Name,
             Country = existingUser is null ? countries : requestedCountries,
             Role = string.IsNullOrWhiteSpace(existingUser?.Role) ? request.Role.Trim() : existingUser.Role,
+            Kind = "access",
             Status = "pending",
             RequestedAt = DateTimeOffset.UtcNow,
         };
@@ -233,11 +234,19 @@ public sealed class AccessController : ControllerBase
         }
 
         var existingUser = await _log.LatestAsync(current.Email, cancellationToken);
-        var mergedCountries = MergeCountries(existingUser?.Country, current.Country);
+        var isReset = string.Equals(current.Kind, "password_reset", StringComparison.OrdinalIgnoreCase);
+        if (isReset && existingUser is null)
+        {
+            return NotFound(new { message = "This email does not have production access." });
+        }
+
+        var mergedCountries = isReset
+            ? existingUser!.Country
+            : MergeCountries(existingUser?.Country, current.Country);
         var password = existingUser?.Password ?? "";
         var temporary = existingUser?.Temporary ?? true;
         var issuedPassword = "";
-        if (string.IsNullOrEmpty(password))
+        if (isReset || string.IsNullOrEmpty(password))
         {
             password = TemporaryPassword();
             temporary = true;
@@ -259,9 +268,11 @@ public sealed class AccessController : ControllerBase
         var approved = Copy(current);
         approved.Status = "approved";
         approved.TemporaryPassword = issuedPassword;
-        approved.Note = existingUser is null
-            ? current.Note
-            : "Existing production access kept. These countries were added.";
+        approved.Note = isReset
+            ? "New temporary password created."
+            : existingUser is null
+                ? current.Note
+                : "Existing production access kept. These countries were added.";
         approved.ApprovedAt = DateTimeOffset.UtcNow;
         await _requests.AppendAsync(approved, cancellationToken);
         return Ok(approved);
@@ -291,6 +302,48 @@ public sealed class AccessController : ControllerBase
         declined.DeclinedAt = DateTimeOffset.UtcNow;
         await _requests.AppendAsync(declined, cancellationToken);
         return Ok(declined);
+    }
+
+    [HttpPost("password-resets")]
+    public async Task<IActionResult> CreatePasswordReset(
+        [FromBody] PasswordResetRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!IsCompanyEmail(request.Email))
+        {
+            return BadRequest(new { message = "Only an @ingrammicro.com email ID can be used." });
+        }
+
+        var email = request.Email.Trim().ToLowerInvariant();
+        var user = await _log.LatestAsync(email, cancellationToken);
+        if (user is null)
+        {
+            return Ok(new
+            {
+                status = "unknown",
+                message = "This email does not have production access.",
+            });
+        }
+
+        var existing = await _requests.LatestByEmailAsync(email, "password_reset", cancellationToken);
+        if (existing?.Status == "pending")
+        {
+            return Ok(new { status = "pending", request = existing });
+        }
+
+        var created = new ApprovalRequestRecord
+        {
+            Id = Guid.NewGuid().ToString(),
+            Email = email,
+            Name = string.IsNullOrWhiteSpace(user.Name) ? NameFromEmail(email) : user.Name,
+            Country = user.Country,
+            Role = user.Role,
+            Kind = "password_reset",
+            Status = "pending",
+            RequestedAt = DateTimeOffset.UtcNow,
+        };
+        await _requests.AppendAsync(created, cancellationToken);
+        return StatusCode(StatusCodes.Status201Created, new { status = "created", request = created });
     }
 
     private static string? Validate(AccessUserRequest request)
@@ -357,6 +410,7 @@ public sealed class AccessController : ControllerBase
             Name = current.Name,
             Country = current.Country,
             Role = current.Role,
+            Kind = string.IsNullOrWhiteSpace(current.Kind) ? "access" : current.Kind,
             Status = current.Status,
             Note = current.Note,
             TemporaryPassword = current.TemporaryPassword,
@@ -473,6 +527,11 @@ public sealed class ApprovalSubmitRequest
     public string? Role { get; set; }
 
     public bool ReplaceDeclined { get; set; }
+}
+
+public sealed class PasswordResetRequest
+{
+    public string Email { get; set; } = "";
 }
 
 public sealed class ApprovalDeclineRequest
