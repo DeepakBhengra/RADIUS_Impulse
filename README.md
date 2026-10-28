@@ -83,6 +83,8 @@ Oracle passwords are user secrets, not files in git:
 
 The project user-secrets id is `b7da84d9-96e6-47f8-823c-0dad566774cb`.
 
+Admin sign-in passwords are not in the dashboard. The API reads `backend-dotnet/ImpulseSupportTool_Repo/Access/admins.enc`, an AES-256-GCM vault. The decryption key comes from `RADIUS_ADMIN_KEY` or from `admin-key.local` in the API project folder. That key file is gitignored. Without it, admin sign-in is unavailable and production sign-in still works.
+
 ## UI
 
 The main screen is a header, a sidebar, and a search card. The card asks for customer PO number, country code, and environment. Search stays disabled until the PO and country are filled in. Recent searches are stored in the browser.
@@ -108,7 +110,7 @@ Detail pages, opened from the result, use hash routes:
 - `#/partner-setup-details`
 - `#/po-switch-details`
 
-Empty, loading, and error states are separate panels. There is no signed-in user. The API does not require a token.
+Empty, loading, and error states are separate panels. Admin and production sign-in are kept in the browser session. Admin passwords are checked by the API and are not stored in the dashboard source.
 
 ## Backend
 

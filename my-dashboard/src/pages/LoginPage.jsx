@@ -20,6 +20,7 @@ import {
   countryLabel,
   isCompanyEmail,
   orderCountries,
+  loginAdmin,
   loginProductionUser,
   passwordIsValid,
   passwordIssues,
@@ -69,8 +70,14 @@ export default function LoginPage() {
             {view === "admin" && (
               <AdminSignIn
                 onBack={() => setView("choose")}
-                onSignedIn={(email) =>
-                  enter({ mode: "admin", email, country: "", role: "Administrator" })
+                onSignedIn={(admin) =>
+                  enter({
+                    mode: "admin",
+                    email: admin.email,
+                    name: admin.name,
+                    country: "",
+                    role: "Administrator",
+                  })
                 }
               />
             )}
@@ -207,24 +214,27 @@ function AccessChoices({ onSelect }) {
 }
 
 function AdminSignIn({ onBack, onSignedIn }) {
-  const [email, setEmail] = useState(DEMO_ACCOUNTS.admin.email);
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  function submit(event) {
+  async function submit(event) {
     event.preventDefault();
+    setError("");
     if (!isCompanyEmail(email)) {
       setError(COMPANY_EMAIL_ERROR);
       return;
     }
-    const matches =
-      email.trim().toLowerCase() === DEMO_ACCOUNTS.admin.email &&
-      password === DEMO_ACCOUNTS.admin.password;
-    if (!matches) {
-      setError("Admin credentials were not recognized.");
-      return;
+    try {
+      const admin = await loginAdmin(email, password);
+      if (!admin) {
+        setError("Admin credentials were not recognized.");
+        return;
+      }
+      onSignedIn(admin);
+    } catch (loginError) {
+      setError(loginError.message || "The access log could not be reached.");
     }
-    onSignedIn(DEMO_ACCOUNTS.admin.email);
   }
 
   return (

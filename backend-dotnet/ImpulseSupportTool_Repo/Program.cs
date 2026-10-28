@@ -83,6 +83,7 @@ builder.Services.AddSingleton(sp =>
     var options = sp.GetRequiredService<IOptions<AccessLogOptions>>().Value;
     return new GuestLog(ResolveAccessPath(environment, options.GuestsDatabase, Path.Combine("logs", "radius-guests.db")));
 });
+builder.Services.AddSingleton<AdminCredentialStore>();
 
 // --------------------------------------------------
 // Existing CORS policy

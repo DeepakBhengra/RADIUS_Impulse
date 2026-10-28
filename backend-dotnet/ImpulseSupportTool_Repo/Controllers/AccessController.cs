@@ -11,12 +11,14 @@ public sealed class AccessController : ControllerBase
     private readonly UserAccessLog _log;
     private readonly ApprovalLog _requests;
     private readonly GuestLog _guests;
+    private readonly AdminCredentialStore _admins;
 
-    public AccessController(UserAccessLog log, ApprovalLog requests, GuestLog guests)
+    public AccessController(UserAccessLog log, ApprovalLog requests, GuestLog guests, AdminCredentialStore admins)
     {
         _log = log;
         _requests = requests;
         _guests = guests;
+        _admins = admins;
     }
 
     [HttpPost("users")]
@@ -110,6 +112,41 @@ public sealed class AccessController : ControllerBase
         }
 
         return Ok(ToProfile(record));
+    }
+
+    [HttpPost("admin-login")]
+    public IActionResult AdminLogin([FromBody] AccessLoginRequest request)
+    {
+        if (!IsCompanyEmail(request.Email))
+        {
+            return BadRequest(new { message = "Only an @ingrammicro.com email ID can be used." });
+        }
+
+        if (string.IsNullOrEmpty(request.Password))
+        {
+            return BadRequest(new { message = "Email and password are required." });
+        }
+
+        if (!_admins.IsReady)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+            {
+                message = "Admin sign-in is not configured on this server.",
+            });
+        }
+
+        var email = request.Email.Trim().ToLowerInvariant();
+        if (!_admins.Authenticate(email, request.Password))
+        {
+            return Unauthorized(new { message = "Admin credentials were not recognized." });
+        }
+
+        return Ok(new
+        {
+            email,
+            name = NameFromEmail(email),
+            role = "Administrator",
+        });
     }
 
     [HttpPost("guests")]

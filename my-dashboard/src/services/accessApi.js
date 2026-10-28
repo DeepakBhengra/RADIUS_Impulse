@@ -43,6 +43,16 @@ export async function findAccessUser(email) {
   }
 }
 
+export async function loginAdminUser(email, password) {
+  try {
+    const response = await client.post("/admin-login", { email, password });
+    return response.data;
+  } catch (error) {
+    if (error.response?.status === 401) return null;
+    throw toError(error, "The access log could not be reached.");
+  }
+}
+
 export async function loginAccessUser(email, password) {
   try {
     const response = await client.post("/login", { email, password });

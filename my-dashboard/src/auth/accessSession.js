@@ -7,6 +7,7 @@ import {
   findGuestLogin,
   listApprovalRequests,
   loginAccessUser,
+  loginAdminUser,
   recordAccessUser,
   recordGuestLogin,
 } from "../services/accessApi";
@@ -17,10 +18,6 @@ const SESSION_KEY = "radius_access_session";
 const REGISTRY_KEY = "radius_registered_users";
 
 export const DEMO_ACCOUNTS = {
-  admin: {
-    email: "admin@ingrammicro.com",
-    password: "admin1234",
-  },
   production: {
     email: "prod.user@ingrammicro.com",
     password: "RadiusProd#1",
@@ -225,6 +222,14 @@ function demoProductionUser() {
     ...DEMO_PRODUCTION_USER,
     name: nameFromEmail(DEMO_PRODUCTION_USER.email),
   };
+}
+
+export async function loginAdmin(email, password) {
+  const normalized = email.trim().toLowerCase();
+  if (!isCompanyEmail(normalized)) {
+    throw new Error(COMPANY_EMAIL_ERROR);
+  }
+  return loginAdminUser(normalized, password);
 }
 
 export async function loginProductionUser(email, password) {
